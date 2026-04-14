@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>게시글 작성</title>
+  <link rel="stylesheet" href="./css/pico.min.css" />
+  <link rel="stylesheet" href="./css/common.css" />
+</head>
+<body>
+  <main class="container">
+    <div id="header-root"></div>
+    <h2 id="page-title">새 글 작성</h2>
+    <form id="write-form">
+      <label for="title">제목</label>
+      <input id="title" type="text" required />
+
+      <label for="content">내용</label>
+      <textarea id="content" rows="10" required></textarea>
+
+      <div style="display:flex; gap:0.5rem;">
+        <button type="submit">저장</button>
+        <button type="button" id="cancel" class="secondary">취소</button>
+      </div>
+    </form>
+  </main>
+  <script type="module" src="./js/write.js"></script>
+</body>
+</html>

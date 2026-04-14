@@ -1,0 +1,87 @@
+/* Custom overrides for toy-board UI */
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  margin-bottom: 1.5rem;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.user-box {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.user-box input {
+  width: 8rem;
+  margin: 0;
+}
+
+.hot-list,
+.article-list {
+  list-style: none;
+  padding: 0;
+}
+
+.hot-list li,
+.article-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--pico-muted-border-color);
+  cursor: pointer;
+}
+
+.hot-list li:hover,
+.article-list li:hover {
+  background: var(--pico-code-background-color);
+}
+
+.article-meta {
+  font-size: 0.85rem;
+  color: var(--pico-muted-color);
+}
+
+.pagination {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.pagination button {
+  padding: 0.25rem 0.75rem;
+  margin: 0;
+}
+
+.pagination button[aria-current="true"] {
+  font-weight: bold;
+}
+
+.comment {
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted var(--pico-muted-border-color);
+}
+
+.comment-actions {
+  font-size: 0.85rem;
+}
+
+.comment-actions button {
+  padding: 0.1rem 0.5rem;
+  margin: 0 0.25rem 0 0;
+  font-size: 0.8rem;
+}
+
+.reply-form {
+  margin: 0.5rem 0 0 0;
+}
+
+.hidden {
+  display: none !important;
+}

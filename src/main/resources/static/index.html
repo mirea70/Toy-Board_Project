@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Toy Board</title>
+  <link rel="stylesheet" href="./css/pico.min.css" />
+  <link rel="stylesheet" href="./css/common.css" />
+</head>
+<body>
+  <main class="container">
+    <div id="header-root"></div>
+
+    <section>
+      <h2>🔥 오늘의 인기글</h2>
+      <ul id="hot-list" class="hot-list"></ul>
+    </section>
+
+    <section>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>게시글 목록</h2>
+        <a href="./write.html" role="button">새 글 작성</a>
+      </div>
+      <ul id="article-list" class="article-list"></ul>
+      <div id="pagination" class="pagination"></div>
+    </section>
+  </main>
+  <script type="module" src="./js/index.js"></script>
+</body>
+</html>

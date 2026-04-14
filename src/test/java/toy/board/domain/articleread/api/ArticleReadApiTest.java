@@ -15,9 +15,10 @@ public class ArticleReadApiTest {
     @Test
     void readTest() {
         Long articleId = 184954739539513344L;
+        Long userId = 1L;
 
         ArticleReadResponse response = articleReadRestClient.get()
-                .uri("/v1/articles/{articleId}", articleId)
+                .uri("/v1/articles/{articleId}?userId={userId}", articleId, userId)
                 .retrieve()
                 .body(ArticleReadResponse.class);
 

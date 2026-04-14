@@ -16,6 +16,7 @@ import toy.board.domain.articleread.response.ArticleReadPageResponse;
 import toy.board.domain.articleread.response.ArticleReadResponse;
 import toy.board.domain.comment.service.CommentServiceV2;
 import toy.board.domain.like.service.ArticleLikeService;
+import toy.board.domain.view.service.ArticleViewService;
 
 import java.time.Duration;
 import java.util.List;
@@ -31,6 +32,7 @@ public class ArticleReadService {
     private final CommentServiceV2 commentService;
     private final ArticleLikeService articleLikeService;
     private final ViewCountQueryService viewCountQueryService;
+    private final ArticleViewService articleViewService;
     private final ArticleQueryModelRepository articleQueryModelRepository;
     private final List<EventHandler> eventHandlers;
     private final ArticleIdListRepository articleIdListRepository;
@@ -45,12 +47,12 @@ public class ArticleReadService {
         }
     }
 
-    public ArticleReadResponse read(Long articleId) {
+    public ArticleReadResponse read(Long articleId, Long userId) {
+        Long viewCount = articleViewService.increase(articleId, userId);
         ArticleQueryModel articleQueryModel = articleQueryModelRepository.read(articleId)
                 .or(() -> fetch(articleId))
                 .orElseThrow();
-
-        return ArticleReadResponse.from(articleQueryModel, viewCountQueryService.count(articleId));
+        return ArticleReadResponse.from(articleQueryModel, viewCount);
     }
 
     private Optional<ArticleQueryModel> fetch(Long articleId) {

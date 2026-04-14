@@ -60,3 +60,7 @@ logs/
 application-local.yml
 application-local.yaml
 application-local.properties
+
+# Claude Code (local only)
+.claude/
+docs/superpowers/
