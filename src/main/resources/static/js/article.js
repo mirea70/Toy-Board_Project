@@ -59,7 +59,7 @@ function renderArticle() {
     </header>
     <p style="white-space:pre-wrap">${escapeHtml(a.content)}</p>
     <footer>
-      <button id="like-btn">${currentLiked ? '♥ 좋아요 취소' : '♡ 좋아요'}</button>
+      <button id="like-btn" class="${currentLiked ? 'liked' : ''}">${currentLiked ? '<span class="heart">♥</span> 좋아요 취소' : '<span class="heart">♡</span> 좋아요'}</button>
       ${isOwner ? `
         <a href="./write.html?id=${a.articleId}" role="button" class="secondary">수정</a>
         <button id="delete-btn" class="contrast">삭제</button>

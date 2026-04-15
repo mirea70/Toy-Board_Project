@@ -61,6 +61,9 @@ application-local.yml
 application-local.yaml
 application-local.properties
 
+# DESIGN.md
+DESIGN.md
+
 # Claude Code (local only)
 .claude/
 docs/superpowers/

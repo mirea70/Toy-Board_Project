@@ -4,26 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>게시글 작성</title>
-  <link rel="stylesheet" href="./css/pico.min.css" />
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
   <link rel="stylesheet" href="./css/common.css" />
 </head>
 <body>
+  <div id="header-root"></div>
+
   <main class="container">
-    <div id="header-root"></div>
-    <h2 id="page-title">새 글 작성</h2>
-    <form id="write-form">
-      <label for="title">제목</label>
-      <input id="title" type="text" required />
+    <a href="./index.html" class="back-link">← 목록으로</a>
 
-      <label for="content">내용</label>
-      <textarea id="content" rows="10" required></textarea>
+    <div class="card form-card">
+      <h1 id="page-title" class="page-title">새 글 작성</h1>
+      <p class="page-subtitle">제목과 내용을 작성한 뒤 저장하세요.</p>
 
-      <div style="display:flex; gap:0.5rem;">
-        <button type="submit">저장</button>
-        <button type="button" id="cancel" class="secondary">취소</button>
-      </div>
-    </form>
+      <form id="write-form">
+        <label for="title">제목</label>
+        <input id="title" type="text" placeholder="제목을 입력하세요" required />
+
+        <label for="content">내용</label>
+        <textarea id="content" rows="12" placeholder="내용을 입력하세요" required></textarea>
+
+        <div class="form-actions">
+          <button type="submit">저장</button>
+          <button type="button" id="cancel" class="secondary">취소</button>
+        </div>
+      </form>
+    </div>
   </main>
+
   <script type="module" src="./js/write.js"></script>
 </body>
 </html>

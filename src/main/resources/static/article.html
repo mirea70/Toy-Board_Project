@@ -4,28 +4,33 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>게시글 상세</title>
-  <link rel="stylesheet" href="./css/pico.min.css" />
+  <link rel="preconnect" href="https://rsms.me/" />
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
   <link rel="stylesheet" href="./css/common.css" />
 </head>
 <body>
+  <div id="header-root"></div>
+
   <main class="container">
-    <div id="header-root"></div>
-    <p><a href="./index.html">← 목록으로</a></p>
+    <a href="./index.html" class="back-link">← 목록으로</a>
 
-    <article id="article-root">불러오는 중...</article>
+    <article id="article-root" class="card article-detail">불러오는 중...</article>
 
-    <section>
-      <h3>댓글</h3>
+    <section class="card">
+      <div class="section-head">
+        <h2 class="section-title">댓글</h2>
+      </div>
       <div id="comment-list"></div>
       <div id="comment-pagination" class="pagination"></div>
 
-      <form id="root-comment-form" style="margin-top:1rem;">
+      <form id="root-comment-form">
         <label for="root-comment-input">댓글 작성</label>
         <textarea id="root-comment-input" rows="3" placeholder="내용을 입력하세요"></textarea>
         <button type="submit">등록</button>
       </form>
     </section>
   </main>
+
   <script type="module" src="./js/article.js"></script>
 </body>
 </html>
