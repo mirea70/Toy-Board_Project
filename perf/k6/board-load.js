@@ -4,10 +4,22 @@ import { Trend, Counter } from 'k6/metrics';
 import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 /**
- * Toy Board — realistic mixed-workload scenario.
+ * Toy Board — mixed-workload scenario ("평상시 트래픽").
  *
- * Workload mix (roughly): 60% list/read, 20% hot, 10% like toggle,
- * 7% comment, 3% article create. Thinks between actions.
+ * 믹스 근거: Nielsen Norman Group, "The 90-9-1 Rule for Participation
+ * Inequality" (2006) — https://www.nngroup.com/articles/participation-inequality/
+ *
+ *   Lurker 90% / Intermittent 9% / Heavy 1% 유저 분포를 세션당 행동으로
+ *   환산하면 읽기 93% / 좋아요 1.9% / 댓글 0.2% / 글작성 0.06% 가 이론값.
+ *   본 스크립트는 희소 쓰기 경로의 통계 샘플 확보를 위해 쓰기 비율을
+ *   의도적으로 과대 표집했습니다. 전체 도출 과정과 조정 근거는
+ *   perf/k6/METHODOLOGY.md 를 참조.
+ *
+ * 실제 구현 비율:
+ *   - 읽기 (목록/인기글/상세/댓글)  : 93%
+ *   - 좋아요 토글                   :  5%  (이론값 1.9%)
+ *   - 댓글 작성                     : 1.5% (이론값 0.2%)
+ *   - 글 작성                       : 0.5% (이론값 0.06%)
  *
  * Env:
  *   BASE_URL       (default http://localhost:8080)
@@ -102,9 +114,14 @@ export function browse() {
       check(res, { 'comments 200': (r) => r.status === 200 });
     });
 
+    // Write-path mix per METHODOLOGY.md (NN/g 90-9-1, over-sampled for stats).
+    // 0.000 ─ 0.050  toggle like     (5.0%)
+    // 0.050 ─ 0.065  create comment  (1.5%)
+    // 0.065 ─ 0.070  create article  (0.5%)
+    // 0.070 ─ 1.000  read-only       (93.0%)
     const dice = Math.random();
 
-    if (dice < 0.10) {
+    if (dice < 0.050) {
       group('toggle like', () => {
         const url = `${BASE_URL}/v1/article-likes/articles/${lastArticleId}/users/${userId}/${LIKE_STRATEGY}`;
         const likeRes = http.post(url, null, { tags: { name: 'POST /v1/article-likes' } });
@@ -115,7 +132,7 @@ export function browse() {
         check(unlikeRes, { 'unlike ok': (r) => r.status >= 200 && r.status < 300 || r.status === 404 });
         writeCounter.add(1);
       });
-    } else if (dice < 0.17) {
+    } else if (dice < 0.065) {
       group('create comment', () => {
         const body = JSON.stringify({ articleId: lastArticleId, writerId: userId, content: `load-test ${Date.now()}` });
         const res = http.post(`${BASE_URL}/v2/comments`, body,
@@ -123,7 +140,7 @@ export function browse() {
         check(res, { 'comment created': (r) => r.status >= 200 && r.status < 300 });
         writeCounter.add(1);
       });
-    } else if (dice < 0.20) {
+    } else if (dice < 0.070) {
       group('create article', () => {
         const body = JSON.stringify({
           boardId: BOARD_ID,
