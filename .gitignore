@@ -61,9 +61,15 @@ application-local.yml
 application-local.yaml
 application-local.properties
 
-# DESIGN.md
+# ETC md
 DESIGN.md
+perf/README.md
 
 # Claude Code (local only)
 .claude/
 docs/superpowers/
+
+# Local infra / ops (not meant to be shared)
+ops/nginx/nginx.conf
+ops/mysql/init/*.sql
+ops/mysql/init/*.sh
