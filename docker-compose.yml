@@ -144,6 +144,7 @@ services:
     depends_on: [nginx]
     volumes:
       - ./perf/k6:/scripts:ro
+      - ./perf/results:/results
     environment:
       BASE_URL: http://nginx:80
     entrypoint: ["k6"]
