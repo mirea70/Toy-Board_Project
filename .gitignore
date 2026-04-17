@@ -66,6 +66,9 @@ DESIGN.md
 perf/README.md
 perf/k6/METHODOLOGY.md
 
+# Performance Result
+perf/results/*
+
 # Claude Code (local only)
 .claude/
 docs/superpowers/
