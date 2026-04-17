@@ -44,9 +44,9 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '30s', target: 20 },
-        { duration: '1m',  target: 50 },
-        { duration: '2m',  target: 50 },
+        { duration: '30s', target: 30 },
+        { duration: '1m',  target: 100 },
+        { duration: '2m',  target: 100 },
         { duration: '30s', target: 0  },
       ],
       gracefulRampDown: '10s',
