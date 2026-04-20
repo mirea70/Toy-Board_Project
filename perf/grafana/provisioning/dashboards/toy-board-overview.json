@@ -16,13 +16,13 @@
     {
       "id": 1,
       "type": "timeseries",
-      "title": "Request rate (req/s) by URI",
+      "title": "Request rate (req/s) by method + URI",
       "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
-          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{application=\"toy-board\"}[1m]))",
-          "legendFormat": "{{uri}}",
+          "expr": "sum by (method, uri) (rate(http_server_requests_seconds_count{application=\"toy-board\",uri!~\"/actuator/.*\"}[1m]))",
+          "legendFormat": "{{method}} {{uri}}",
           "refId": "A"
         }
       ],
@@ -32,13 +32,13 @@
     {
       "id": 2,
       "type": "timeseries",
-      "title": "Latency p95 (s) by URI",
+      "title": "Latency p95 (s) by method + URI",
       "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{application=\"toy-board\"}[1m])))",
-          "legendFormat": "p95 {{uri}}",
+          "expr": "histogram_quantile(0.95, sum by (le, method, uri) (rate(http_server_requests_seconds_bucket{application=\"toy-board\",uri!~\"/actuator/.*\"}[1m])))",
+          "legendFormat": "p95 {{method}} {{uri}}",
           "refId": "A"
         }
       ],
@@ -170,6 +170,58 @@
       "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{application=\"toy-board\"}[1m]))", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 1}, "overrides": []},
       "options": {"reduceOptions": {"calcs": ["max", "mean", "lastNotNull"], "fields": "", "values": false}, "textMode": "value_and_name", "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal"}
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "Server time share by method + URI (s/s) — CPU 점유 비중",
+      "description": "method + URI 조합별로 서버가 초당 몇 초를 처리에 썼는지. 총합이 container CPU 수 (예: 2.0) 에 가까울수록 포화. 값이 높은 엔드포인트가 CPU 의 대부분을 먹는 병목.",
+      "gridPos": {"x": 0, "y": 37, "w": 12, "h": 9},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (method, uri) (rate(http_server_requests_seconds_sum{application=\"toy-board\",uri!~\"/actuator/.*\"}[1m]))",
+          "legendFormat": "{{method}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "stacking": {"mode": "normal", "group": "A"},
+            "fillOpacity": 30,
+            "lineWidth": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "right", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 14,
+      "type": "bargauge",
+      "title": "Total requests by method + URI (time range 누적)",
+      "description": "대시보드 time range 동안 각 method + URI 가 받은 누적 요청 건수.",
+      "gridPos": {"x": 12, "y": 37, "w": 12, "h": 9},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sort_desc(sum by (method, uri) (increase(http_server_requests_seconds_count{application=\"toy-board\",uri!~\"/actuator/.*\"}[$__range])))",
+          "legendFormat": "{{method}} {{uri}}",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0}, "overrides": []},
+      "options": {
+        "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false},
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "minVizWidth": 0,
+        "minVizHeight": 10
+      }
     }
   ]
 }
