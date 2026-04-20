@@ -37,10 +37,7 @@ public class ArticleLikeService {
                 ArticleLike.create(snowflake.nextId(), articleId, userId)
         );
 
-        int result = articleLikeCountRepository.increase(articleId);
-        if (result == 0) {
-            articleLikeCountRepository.save(ArticleLikeCount.init(articleId, 1L));
-        }
+        articleLikeCountRepository.increase(articleId);
 
         eventPublisher.publish(
                 EventType.ARTICLE_LIKED,
