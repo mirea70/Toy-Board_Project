@@ -53,8 +53,8 @@ export const options = {
       startVUs: 0,
       stages: [
         { duration: '1m',  target: 200 },
-        { duration: '4m',  target: 3000 },
-        { duration: '11m', target: 3000 },
+        { duration: '5m',  target: 6000 },
+        { duration: '11m', target: 6000 },
         { duration: '1m',  target: 0    },
       ],
       gracefulRampDown: '10s',
