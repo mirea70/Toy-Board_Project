@@ -41,7 +41,7 @@ stage1 과 동일 — [stage1/env.md](../stage1/env.md) 참조.
 - 스크립트: [`../../k6/board-load.js`](../../k6/board-load.js)
 - 트래픽 믹스 근거: [`../../k6/METHODOLOGY.md §2~3`](../../k6/METHODOLOGY.md) (NN/g 90-9-1)
 - **Think-time 시나리오**: 현실 (iter_dur ~27s). 근거: [`METHODOLOGY.md §4`](../../k6/METHODOLOGY.md)
-  - stage0~2 는 **압축** 시나리오 (iter_dur ~4.6s) 였음 → stage3 부터 전환
+    - stage0~2 는 **압축** 시나리오 (iter_dur ~4.6s) 였음 → stage3 부터 전환
 - stages: `1m → 200 VU` / `2m → 800 VU` / `11m (hold 800)` / `1m → 0 VU`
 - 총 소요: 약 15분
 
