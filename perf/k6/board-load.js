@@ -24,13 +24,13 @@ import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
  * Env:
  *   BASE_URL       (default http://localhost:8080)
  *   BOARD_ID       (default 1)
- *   LIKE_STRATEGY  (default pessimistic-lock-2)
+ *   LIKE_STRATEGY  (default pessimistic-lock-1)
  *   MAX_USER_ID    (default 1000)
  */
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const BOARD_ID = Number(__ENV.BOARD_ID || 1);
-const LIKE_STRATEGY = __ENV.LIKE_STRATEGY || 'pessimistic-lock-2';
+const LIKE_STRATEGY = __ENV.LIKE_STRATEGY || 'pessimistic-lock-1';
 const MAX_USER_ID = Number(__ENV.MAX_USER_ID || 1000);
 
 const listTrend = new Trend('board_list_duration', true);
