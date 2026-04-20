@@ -21,6 +21,14 @@ import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
  *   - 댓글 작성                     : 1.5% (이론값 0.2%)
  *   - 글 작성                       : 0.5% (이론값 0.06%)
  *
+ * Think-time (사용자가 글 읽는 시간):
+ *   stage3 부터 **현실 게시판 유저 체감 기준** 으로 전환.
+ *   - 목록 → 다음 행동  :   8~15s
+ *   - 상세 → 댓글       :   3~8s
+ *   - iter 종료 대기    :   5~15s
+ *   → iteration_duration 평균 ~27s. stage0~2 의 "압축 시나리오(iter_dur ~4.6s)"
+ *     와는 비교 불가. 변경 근거와 환산 규칙은 METHODOLOGY.md §4 참조.
+ *
  * Env:
  *   BASE_URL       (default http://localhost:8080)
  *   BOARD_ID       (default 1)
@@ -44,10 +52,10 @@ export const options = {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '30s', target: 50 },
         { duration: '1m',  target: 200 },
-        { duration: '2m',  target: 200 },
-        { duration: '30s', target: 0  },
+        { duration: '2m',  target: 800 },
+        { duration: '11m', target: 800 },
+        { duration: '1m',  target: 0   },
       ],
       gracefulRampDown: '10s',
       exec: 'browse',
@@ -88,7 +96,7 @@ export function browse() {
     try { lastArticleId = pickArticleId(res.json()); } catch (_) {}
   });
 
-  sleep(randomIntBetween(1, 2));
+  sleep(randomIntBetween(8, 15));   // 목록 훑어보고 다음 행동까지
 
   group('hot articles', () => {
     if (Math.random() < 0.35) {
@@ -106,7 +114,7 @@ export function browse() {
       readTrend.add(res.timings.duration);
     });
 
-    sleep(1);
+    sleep(randomIntBetween(3, 8));   // 글 본문 읽고 댓글 섹션 이동까지
 
     group('list comments', () => {
       const res = http.get(`${BASE_URL}/v2/comments?articleId=${lastArticleId}&page=1&pageSize=20`,
@@ -156,5 +164,5 @@ export function browse() {
     }
   }
 
-  sleep(randomIntBetween(1, 3));
+  sleep(randomIntBetween(5, 15));   // iteration 종료 후 다음 세션 시작까지의 체류
 }
