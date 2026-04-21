@@ -148,9 +148,9 @@
       "title": "Live threads",
       "gridPos": {"x": 12, "y": 30, "w": 4, "h": 5},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "jvm_threads_live_threads{application=\"toy-board\"}", "refId": "A"}],
+      "targets": [{"expr": "jvm_threads_live_threads{application=\"toy-board\"}", "legendFormat": "{{service}}", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []},
-      "options": {"reduceOptions": {"calcs": ["max", "mean", "lastNotNull"], "fields": "", "values": false}, "textMode": "value_and_name", "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal"}
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "value_and_name", "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal"}
     },
     {
       "id": 10,
@@ -169,7 +169,7 @@
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [{"expr": "sum(rate(http_server_requests_seconds_count{application=\"toy-board\"}[1m]))", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "reqps", "decimals": 1}, "overrides": []},
-      "options": {"reduceOptions": {"calcs": ["max", "mean", "lastNotNull"], "fields": "", "values": false}, "textMode": "value_and_name", "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal"}
+      "options": {"reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "value", "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "horizontal"}
     },
     {
       "id": 13,
@@ -222,6 +222,40 @@
         "minVizWidth": 0,
         "minVizHeight": 10
       }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Kafka Consumer Lag (records)",
+      "description": "Kafka consumer lag per consumer group / topic / partition (records behind).",
+      "gridPos": {"x": 0, "y": 46, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "kafka_consumer_fetch_manager_records_lag_max",
+          "legendFormat": "{{client_id}} {{topic}}-{{partition}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "short", "decimals": 0, "min": 0}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Spring CPU Usage by Instance",
+      "description": "process_cpu_usage per Spring instance (write-app vs read-app). 0~1 scale (0% ~ 100%).",
+      "gridPos": {"x": 12, "y": 46, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "process_cpu_usage{application=\"toy-board\"}",
+          "legendFormat": "{{service}} ({{instance}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 2, "min": 0, "max": 1}, "overrides": []},
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
     }
   ]
 }

@@ -3,15 +3,13 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Toy Board app — discover every replica via Docker's embedded DNS.
-  # In plain Compose the service name `app` returns A records for ALL
-  # replicas, so Prometheus scrapes each container directly. Scale with
-  # `docker compose up -d --scale app=N` and new targets appear within
-  # refresh_interval.
-  - job_name: toy-board
+  # Toy Board write-app & read-app — discover every replica via Docker's embedded DNS.
+  # Compose service names return A records for ALL replicas (e.g. read-app=2 yields 2 IPs),
+  # so Prometheus scrapes each container directly. Use `service` label to distinguish.
+  - job_name: toy-board-write
     metrics_path: /actuator/prometheus
     dns_sd_configs:
-      - names: [app]
+      - names: [write-app]
         type: A
         port: 8080
         refresh_interval: 10s
@@ -19,7 +17,20 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: instance
       - target_label: service
-        replacement: toy-board
+        replacement: write-app
+
+  - job_name: toy-board-read
+    metrics_path: /actuator/prometheus
+    dns_sd_configs:
+      - names: [read-app]
+        type: A
+        port: 8080
+        refresh_interval: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - target_label: service
+        replacement: read-app
 
   - job_name: prometheus
     static_configs:
