@@ -1,15 +1,16 @@
 # ---------- Build stage ----------
 FROM eclipse-temurin:21-jdk AS build
+ARG MODULE
 WORKDIR /src
 
 COPY gradlew gradlew
 COPY gradle ./gradle
 COPY settings.gradle build.gradle ./
-RUN chmod +x gradlew && ./gradlew --version --no-daemon
-
-COPY src ./src
-RUN ./gradlew bootJar --no-daemon -x test \
- && cp build/libs/*.jar /tmp/app.jar
+COPY common ./common
+COPY service ./service
+RUN chmod +x gradlew \
+ && ./gradlew :service:${MODULE}:bootJar --no-daemon -x test \
+ && cp service/${MODULE}/build/libs/*.jar /tmp/app.jar
 
 # ---------- Runtime stage ----------
 FROM eclipse-temurin:21-jdk AS runtime
