@@ -14,6 +14,9 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       enable-auto-commit: false
+  jackson:
+    generator:
+      write-numbers-as-strings: true
 
 endpoints:
   toy-board-write-app:
