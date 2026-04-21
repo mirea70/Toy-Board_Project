@@ -3,8 +3,8 @@ package toy.board.write.domain.article.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import toy.board.common.event.EventPublisher;
 import toy.board.common.event.EventType;
+import toy.board.common.outboxmessagerelay.OutboxEventPublisher;
 import toy.board.common.event.payload.ArticleCreatedEventPayload;
 import toy.board.common.event.payload.ArticleDeletedEventPayload;
 import toy.board.common.event.payload.ArticleUpdatedEventPayload;
@@ -26,7 +26,7 @@ public class ArticleService {
     private final Snowflake snowflake;
     private final ArticleRepository articleRepository;
     private final BoardArticleCountRepository boardArticleCountRepository;
-    private final EventPublisher eventPublisher;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
     public ArticleResponse create(ArticleCreateRequest request) {
@@ -46,7 +46,7 @@ public class ArticleService {
             );
         }
 
-        eventPublisher.publish(
+        outboxEventPublisher.publish(
                 EventType.ARTICLE_CREATED,
                 ArticleCreatedEventPayload.builder()
                         .articleId(article.getArticleId())
@@ -57,7 +57,8 @@ public class ArticleService {
                         .createdAt(article.getCreatedAt())
                         .modifiedAt(article.getModifiedAt())
                         .boardArticleCount(count(article.getBoardId()))
-                        .build()
+                        .build(),
+                article.getArticleId()
         );
 
         return ArticleResponse.from(article);
@@ -67,7 +68,7 @@ public class ArticleService {
     public ArticleResponse update(Long articleId, ArticleUpdateRequest request) {
         Article article = articleRepository.findById(articleId).orElseThrow();
         article.update(request.getTitle(), request.getContent());
-        eventPublisher.publish(
+        outboxEventPublisher.publish(
                 EventType.ARTICLE_UPDATED,
                 ArticleUpdatedEventPayload.builder()
                         .articleId(article.getArticleId())
@@ -77,7 +78,8 @@ public class ArticleService {
                         .writerId(article.getWriterId())
                         .createdAt(article.getCreatedAt())
                         .modifiedAt(article.getModifiedAt())
-                        .build()
+                        .build(),
+                article.getArticleId()
         );
         return ArticleResponse.from(article);
     }
@@ -91,7 +93,7 @@ public class ArticleService {
         Article article = articleRepository.findById(articleId).orElseThrow();
         articleRepository.delete(article);
         boardArticleCountRepository.decrease(article.getBoardId());
-        eventPublisher.publish(
+        outboxEventPublisher.publish(
                 EventType.ARTICLE_DELETED,
                 ArticleDeletedEventPayload.builder()
                         .articleId(article.getArticleId())
@@ -101,7 +103,8 @@ public class ArticleService {
                         .writerId(article.getWriterId())
                         .createdAt(article.getCreatedAt())
                         .modifiedAt(article.getModifiedAt())
-                        .build()
+                        .build(),
+                article.getArticleId()
         );
     }
 

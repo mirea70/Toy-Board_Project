@@ -3,8 +3,8 @@ package toy.board.write.domain.view.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import toy.board.common.event.EventPublisher;
 import toy.board.common.event.EventType;
+import toy.board.common.outboxmessagerelay.OutboxEventPublisher;
 import toy.board.common.event.payload.ArticleViewedEventPayload;
 import toy.board.write.domain.view.entity.ArticleViewCount;
 import toy.board.write.domain.view.repository.ArticleViewCountBackupRepository;
@@ -13,7 +13,7 @@ import toy.board.write.domain.view.repository.ArticleViewCountBackupRepository;
 @RequiredArgsConstructor
 public class ArticleViewCountBackupProcessor {
     private final ArticleViewCountBackupRepository articleViewCountBackupRepository;
-    private final EventPublisher eventPublisher;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
     public void backup(Long articleId, Long viewCount) {
@@ -25,12 +25,13 @@ public class ArticleViewCountBackupProcessor {
                     );
         }
 
-        eventPublisher.publish(
+        outboxEventPublisher.publish(
                 EventType.ARTICLE_VIEWED,
                 ArticleViewedEventPayload.builder()
                         .articleId(articleId)
                         .articleViewCount(viewCount)
-                        .build()
+                        .build(),
+                articleId
         );
     }
 }

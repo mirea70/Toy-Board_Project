@@ -3,8 +3,8 @@ package toy.board.write.domain.comment.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import toy.board.common.event.EventPublisher;
 import toy.board.common.event.EventType;
+import toy.board.common.outboxmessagerelay.OutboxEventPublisher;
 import toy.board.common.event.payload.CommentCreatedEventPayload;
 import toy.board.common.event.payload.CommentDeletedEventPayload;
 import toy.board.common.snowflake.Snowflake;
@@ -26,7 +26,7 @@ public class CommentServiceV2 {
     private final Snowflake snowflake;
     private final CommentRepositoryV2 commentRepository;
     private final ArticleCommentCountRepository articleCommentCountRepository;
-    private final EventPublisher eventPublisher;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
     public CommentResponse create(CommentCreateRequestV2 request) {
@@ -52,7 +52,7 @@ public class CommentServiceV2 {
             );
         }
 
-        eventPublisher.publish(
+        outboxEventPublisher.publish(
                 EventType.COMMENT_CREATED,
                 CommentCreatedEventPayload.builder()
                         .commentId(comment.getCommentId())
@@ -62,7 +62,8 @@ public class CommentServiceV2 {
                         .deleted(comment.getDeleted())
                         .createdAt(comment.getCreatedAt())
                         .articleCommentCount(count(comment.getArticleId()))
-                        .build()
+                        .build(),
+                comment.getArticleId()
         );
 
         return CommentResponse.from(comment);
@@ -96,7 +97,7 @@ public class CommentServiceV2 {
                         delete(comment);
                     }
 
-                    eventPublisher.publish(
+                    outboxEventPublisher.publish(
                             EventType.COMMENT_DELETED,
                             CommentDeletedEventPayload.builder()
                                     .commentId(comment.getCommentId())
@@ -106,7 +107,8 @@ public class CommentServiceV2 {
                                     .deleted(comment.getDeleted())
                                     .createdAt(comment.getCreatedAt())
                                     .articleCommentCount(count(comment.getArticleId()))
-                                    .build()
+                                    .build(),
+                            comment.getArticleId()
                     );
                 });
     }

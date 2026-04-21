@@ -3,8 +3,8 @@ package toy.board.write.domain.like.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import toy.board.common.event.EventPublisher;
 import toy.board.common.event.EventType;
+import toy.board.common.outboxmessagerelay.OutboxEventPublisher;
 import toy.board.common.event.payload.ArticleLikedEventPayload;
 import toy.board.common.event.payload.ArticleUnlikedEventPayload;
 import toy.board.common.snowflake.Snowflake;
@@ -20,7 +20,7 @@ public class ArticleLikeService {
     private final Snowflake snowflake;
     private final ArticleLikeRepository articleLikeRepository;
     private final ArticleLikeCountRepository articleLikeCountRepository;
-    private final EventPublisher eventPublisher;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     public ArticleLikeResponse read(Long articleId, Long userId) {
         return articleLikeRepository.findByArticleIdAndUserId(articleId, userId)
@@ -39,7 +39,7 @@ public class ArticleLikeService {
 
         articleLikeCountRepository.increase(articleId);
 
-        eventPublisher.publish(
+        outboxEventPublisher.publish(
                 EventType.ARTICLE_LIKED,
                 ArticleLikedEventPayload.builder()
                         .articleLikeId(articleLike.getArticleLikeId())
@@ -47,7 +47,8 @@ public class ArticleLikeService {
                         .userId(articleLike.getUserId())
                         .createdAt(articleLike.getCreatedAt())
                         .articleLikeCount(count(articleLike.getArticleId()))
-                        .build()
+                        .build(),
+                articleId
         );
     }
 
@@ -57,7 +58,7 @@ public class ArticleLikeService {
                 .ifPresent(articleLike -> {
                     articleLikeRepository.delete(articleLike);
                     articleLikeCountRepository.decrease(articleId);
-                    eventPublisher.publish(
+                    outboxEventPublisher.publish(
                             EventType.ARTICLE_UNLIKED,
                             ArticleUnlikedEventPayload.builder()
                                     .articleLikeId(articleLike.getArticleLikeId())
@@ -65,7 +66,8 @@ public class ArticleLikeService {
                                     .userId(articleLike.getUserId())
                                     .createdAt(articleLike.getCreatedAt())
                                     .articleLikeCount(count(articleLike.getArticleId()))
-                                    .build()
+                                    .build(),
+                            articleId
                     );
                 });
     }
