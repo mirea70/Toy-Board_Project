@@ -128,7 +128,7 @@ services:
     depends_on:
       redis: { condition: service_healthy }
       kafka: { condition: service_healthy }
-      write-app: { condition: service_started }
+      write-app: { condition: service_healthy }
     environment:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379

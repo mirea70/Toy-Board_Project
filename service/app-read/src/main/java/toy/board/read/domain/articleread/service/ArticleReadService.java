@@ -64,6 +64,10 @@ public class ArticleReadService {
         return result;
     }
 
+    public void prepopulate(Long articleId) {
+        fetch(articleId);
+    }
+
     public ArticleReadPageResponse readAll(Long boardId, Long page, Long pageSize) {
         return ArticleReadPageResponse.of(
                 readAll(readAllArticleIds(boardId, page, pageSize))
