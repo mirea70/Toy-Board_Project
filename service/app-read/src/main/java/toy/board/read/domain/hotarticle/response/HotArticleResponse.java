@@ -3,6 +3,7 @@ package toy.board.read.domain.hotarticle.response;
 import lombok.Getter;
 import lombok.ToString;
 import toy.board.read.client.ArticleClient;
+import toy.board.read.domain.articleread.repository.ArticleQueryModel;
 
 import java.time.LocalDateTime;
 
@@ -23,5 +24,9 @@ public class HotArticleResponse {
 
     public static HotArticleResponse from(ArticleClient.ArticleResponse article) {
         return of(article.getArticleId(), article.getTitle(), article.getCreatedAt());
+    }
+
+    public static HotArticleResponse from(ArticleQueryModel model) {
+        return of(model.getArticleId(), model.getTitle(), model.getCreatedAt());
     }
 }

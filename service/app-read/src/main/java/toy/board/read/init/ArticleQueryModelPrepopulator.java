@@ -6,6 +6,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 import toy.board.read.client.ArticleClient;
+import toy.board.read.domain.articleread.repository.ArticleIdListRepository;
 import toy.board.read.domain.articleread.service.ArticleReadService;
 
 import java.time.Duration;
@@ -18,10 +19,12 @@ import java.util.List;
 public class ArticleQueryModelPrepopulator implements ApplicationRunner {
     private final ArticleClient articleClient;
     private final ArticleReadService articleReadService;
+    private final ArticleIdListRepository articleIdListRepository;
 
     private static final Long BOARD_ID = 1L;
     private static final Long PAGE_SIZE = 100L;
     private static final long MAX_PAGES = 1000L;  // safety cap (article 100K 까지)
+    private static final Long ARTICLE_ID_LIST_LIMIT = 1000L;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -39,6 +42,7 @@ public class ArticleQueryModelPrepopulator implements ApplicationRunner {
                 for (ArticleClient.ArticleResponse article : articles) {
                     try {
                         articleReadService.prepopulate(article.getArticleId());
+                        articleIdListRepository.add(BOARD_ID, article.getArticleId(), ARTICLE_ID_LIST_LIMIT);
                         total++;
                     } catch (Exception e) {
                         log.warn("[ArticleQueryModelPrepopulator] skip articleId={} due to {}", article.getArticleId(), e.toString());

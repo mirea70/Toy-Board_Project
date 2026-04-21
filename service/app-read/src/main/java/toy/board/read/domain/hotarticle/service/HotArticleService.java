@@ -7,12 +7,15 @@ import toy.board.common.event.Event;
 import toy.board.common.event.EventPayload;
 import toy.board.common.event.EventType;
 import toy.board.read.client.ArticleClient;
+import toy.board.read.domain.articleread.repository.ArticleQueryModel;
+import toy.board.read.domain.articleread.repository.ArticleQueryModelRepository;
 import toy.board.read.domain.hotarticle.eventhandler.EventHandler;
 import toy.board.read.domain.hotarticle.repository.HotArticleListRepository;
 import toy.board.read.domain.hotarticle.response.HotArticleResponse;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -22,6 +25,7 @@ public class HotArticleService {
     private final List<EventHandler> eventHandlers;
     private final HotArticleScoreUpdater hotArticleScoreUpdater;
     private final HotArticleListRepository hotArticleListRepository;
+    private final ArticleQueryModelRepository articleQueryModelRepository;
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void handleEvent(Event<EventPayload> event) {
@@ -49,11 +53,22 @@ public class HotArticleService {
     }
 
     public List<HotArticleResponse> readAll(String dateStr) {
-        return hotArticleListRepository.readAll(dateStr).stream()
-                .map(articleClient::read)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(HotArticleResponse::from)
+        List<Long> ids = hotArticleListRepository.readAll(dateStr);
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, ArticleQueryModel> cached = articleQueryModelRepository.readAll(ids);
+        return ids.stream()
+                .map(id -> {
+                    ArticleQueryModel model = cached.get(id);
+                    if (model != null) {
+                        return HotArticleResponse.from(model);
+                    }
+                    return articleClient.read(id)
+                            .map(HotArticleResponse::from)
+                            .orElse(null);
+                })
+                .filter(Objects::nonNull)
                 .toList();
     }
 }
