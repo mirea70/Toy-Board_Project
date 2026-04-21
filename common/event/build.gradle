@@ -1,0 +1,6 @@
+dependencies {
+    implementation project(':common:data-serializer')
+}
+
+bootJar { enabled = false }
+jar      { enabled = true  }
