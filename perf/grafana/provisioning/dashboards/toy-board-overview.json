@@ -138,7 +138,7 @@
       "title": "Process CPU",
       "gridPos": {"x": 0, "y": 30, "w": 12, "h": 7},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "targets": [{"expr": "process_cpu_usage{application=\"toy-board\"}", "legendFormat": "process cpu", "refId": "A"}],
+      "targets": [{"expr": "process_cpu_usage{application=\"toy-board\"}", "legendFormat": "{{service}} ({{instance}})", "refId": "A"}],
       "fieldConfig": {"defaults": {"unit": "percentunit", "decimals": 2, "min": 0, "max": 1}, "overrides": []},
       "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi"}}
     },

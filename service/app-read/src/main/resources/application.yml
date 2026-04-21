@@ -27,3 +27,6 @@ management:
   metrics:
     tags:
       application: toy-board
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
