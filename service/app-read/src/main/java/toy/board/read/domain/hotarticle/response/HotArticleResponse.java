@@ -2,6 +2,7 @@ package toy.board.read.domain.hotarticle.response;
 
 import lombok.Getter;
 import lombok.ToString;
+import toy.board.read.client.ArticleClient;
 
 import java.time.LocalDateTime;
 
@@ -12,12 +13,15 @@ public class HotArticleResponse {
     private String title;
     private LocalDateTime createdAt;
 
-    // TODO Task 18: replace with HotArticleResponse.from(ArticleResponse) where ArticleResponse is the RestClient DTO returned by ArticleClient.read(articleId).
     public static HotArticleResponse of(Long articleId, String title, LocalDateTime createdAt) {
         HotArticleResponse response = new HotArticleResponse();
         response.articleId = articleId;
         response.title = title;
         response.createdAt = createdAt;
         return response;
+    }
+
+    public static HotArticleResponse from(ArticleClient.ArticleResponse article) {
+        return of(article.getArticleId(), article.getTitle(), article.getCreatedAt());
     }
 }

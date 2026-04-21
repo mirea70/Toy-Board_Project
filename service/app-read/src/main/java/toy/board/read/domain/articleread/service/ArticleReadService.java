@@ -5,6 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import toy.board.common.event.Event;
 import toy.board.common.event.EventPayload;
+import toy.board.read.client.ArticleClient;
+import toy.board.read.client.CommentClient;
+import toy.board.read.client.LikeClient;
+import toy.board.read.client.ViewClient;
 import toy.board.read.domain.articleread.eventhandler.EventHandler;
 import toy.board.read.domain.articleread.repository.ArticleIdListRepository;
 import toy.board.read.domain.articleread.repository.ArticleQueryModel;
@@ -12,7 +16,7 @@ import toy.board.read.domain.articleread.repository.ArticleQueryModelRepository;
 import toy.board.read.domain.articleread.response.ArticleReadPageResponse;
 import toy.board.read.domain.articleread.response.ArticleReadResponse;
 
-import java.util.Collections;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -22,7 +26,10 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class ArticleReadService {
-    // TODO Task 18: inject ArticleClient, CommentClient, ArticleLikeClient, ArticleViewClient (RestClient) instead of local services.
+    private final ArticleClient articleClient;
+    private final CommentClient commentClient;
+    private final LikeClient likeClient;
+    private final ViewClient viewClient;
     private final ViewCountQueryService viewCountQueryService;
     private final ArticleQueryModelRepository articleQueryModelRepository;
     private final List<EventHandler> eventHandlers;
@@ -37,9 +44,8 @@ public class ArticleReadService {
         }
     }
 
-    public ArticleReadResponse read(Long articleId, Long userId) {
-        // TODO Task 18: replace with ArticleViewClient.increase(articleId, userId)
-        Long viewCount = 0L;
+    public ArticleReadResponse read(Long articleId) {
+        Long viewCount = viewClient.count(articleId);
         ArticleQueryModel articleQueryModel = articleQueryModelRepository.read(articleId)
                 .or(() -> fetch(articleId))
                 .orElseThrow();
@@ -47,9 +53,15 @@ public class ArticleReadService {
     }
 
     private Optional<ArticleQueryModel> fetch(Long articleId) {
-        // TODO Task 18: replace stub with ArticleClient.read / CommentClient.count / ArticleLikeClient.count and cache via articleQueryModelRepository.create(...)
-        log.info("[ArticleReadService.fetch] stubbed fetch. articleId={}", articleId);
-        return Optional.empty();
+        Optional<ArticleClient.ArticleResponse> articleOpt = articleClient.read(articleId);
+        Optional<ArticleQueryModel> result = articleOpt.map(article ->
+                ArticleQueryModel.create(
+                        article,
+                        commentClient.count(articleId),
+                        likeClient.count(articleId)
+                ));
+        result.ifPresent(model -> articleQueryModelRepository.create(model, Duration.ofDays(1)));
+        return result;
     }
 
     public ArticleReadPageResponse readAll(Long boardId, Long page, Long pageSize) {
@@ -79,9 +91,10 @@ public class ArticleReadService {
             log.info("[ArticleReadService.readAllArticleIds] return redis data");
             return articleIds;
         }
-        // TODO Task 18: fallback to ArticleClient.readAll(boardId, page, pageSize) when redis misses.
-        log.info("[ArticleReadService.readAllArticleIds] redis miss - stub returning empty list");
-        return Collections.emptyList();
+        log.info("[ArticleReadService.readAllArticleIds] redis miss - fallback to ArticleClient");
+        return articleClient.readAll(boardId, page, pageSize).getArticles().stream()
+                .map(ArticleClient.ArticleResponse::getArticleId)
+                .toList();
     }
 
     public List<ArticleReadResponse> readAllInfiniteScroll(Long boardId, Long lastArticleId, Long pageSize) {
@@ -94,8 +107,9 @@ public class ArticleReadService {
             log.info("[ArticleReadService.readAllInfiniteScrollArticleIds] return redis data");
             return articleIds;
         }
-        // TODO Task 18: fallback to ArticleClient.readAllInfiniteScroll(...) when redis misses.
-        log.info("[ArticleReadService.readAllInfiniteScrollArticleIds] redis miss - stub returning empty list");
-        return Collections.emptyList();
+        log.info("[ArticleReadService.readAllInfiniteScrollArticleIds] redis miss - fallback to ArticleClient");
+        return articleClient.readAllInfiniteScroll(boardId, lastArticleId, pageSize).stream()
+                .map(ArticleClient.ArticleResponse::getArticleId)
+                .toList();
     }
 }

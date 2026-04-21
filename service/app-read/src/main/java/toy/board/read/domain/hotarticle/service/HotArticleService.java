@@ -6,18 +6,19 @@ import org.springframework.stereotype.Service;
 import toy.board.common.event.Event;
 import toy.board.common.event.EventPayload;
 import toy.board.common.event.EventType;
+import toy.board.read.client.ArticleClient;
 import toy.board.read.domain.hotarticle.eventhandler.EventHandler;
 import toy.board.read.domain.hotarticle.repository.HotArticleListRepository;
 import toy.board.read.domain.hotarticle.response.HotArticleResponse;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class HotArticleService {
-    // TODO Task 18: inject ArticleClient (RestClient) instead of local ArticleRepository/Article entity.
+    private final ArticleClient articleClient;
     private final List<EventHandler> eventHandlers;
     private final HotArticleScoreUpdater hotArticleScoreUpdater;
     private final HotArticleListRepository hotArticleListRepository;
@@ -48,8 +49,11 @@ public class HotArticleService {
     }
 
     public List<HotArticleResponse> readAll(String dateStr) {
-        // TODO Task 18: 결과 ID 목록을 ArticleClient.read로 매핑하여 HotArticleResponse 리스트로 변환
-        hotArticleListRepository.readAll(dateStr);
-        return Collections.emptyList();
+        return hotArticleListRepository.readAll(dateStr).stream()
+                .map(articleClient::read)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(HotArticleResponse::from)
+                .toList();
     }
 }

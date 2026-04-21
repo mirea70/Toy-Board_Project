@@ -7,6 +7,7 @@ import toy.board.common.event.payload.ArticleUnlikedEventPayload;
 import toy.board.common.event.payload.ArticleUpdatedEventPayload;
 import toy.board.common.event.payload.CommentCreatedEventPayload;
 import toy.board.common.event.payload.CommentDeletedEventPayload;
+import toy.board.read.client.ArticleClient;
 
 import java.time.LocalDateTime;
 
@@ -36,7 +37,22 @@ public class ArticleQueryModel {
         return articleQueryModel;
     }
 
-    // TODO Task 18: re-introduce ArticleQueryModel.create(ArticleResponse, Long, Long) using ArticleClient-returned DTO (ArticleResponse from RestClient).
+    public static ArticleQueryModel create(
+            ArticleClient.ArticleResponse article,
+            Long articleCommentCount,
+            Long articleLikeCount) {
+        ArticleQueryModel model = new ArticleQueryModel();
+        model.articleId = article.getArticleId();
+        model.title = article.getTitle();
+        model.content = article.getContent();
+        model.boardId = article.getBoardId();
+        model.writerId = article.getWriterId();
+        model.createdAt = article.getCreatedAt();
+        model.modifiedAt = article.getModifiedAt();
+        model.articleCommentCount = articleCommentCount;
+        model.articleLikeCount = articleLikeCount;
+        return model;
+    }
 
     public void updateBy(CommentCreatedEventPayload payload) {
         this.articleCommentCount = payload.getArticleCommentCount();
