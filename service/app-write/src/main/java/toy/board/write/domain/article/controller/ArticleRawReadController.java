@@ -11,10 +11,6 @@ import toy.board.write.domain.article.service.ArticleService;
 
 import java.util.List;
 
-/**
- * Raw GET endpoints exposed by app-write for cache-miss fallback / CQRS read-side.
- * Called by read-app's ArticleClient from inside the docker network.
- */
 @RestController
 @RequiredArgsConstructor
 public class ArticleRawReadController {

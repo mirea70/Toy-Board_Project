@@ -17,9 +17,6 @@ import toy.board.write.domain.article.service.ArticleService;
 public class ArticleController {
     private final ArticleService articleService;
 
-    // NOTE: GET /v1/articles, /v1/articles/{articleId}, /v1/articles/infinite-scroll
-    // are served by articleread.ArticleReadController (CQRS read path).
-
     @PostMapping("/v1/articles")
     public ArticleResponse create(@RequestBody ArticleCreateRequest request) {
         return articleService.create(request);
