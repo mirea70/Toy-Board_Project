@@ -17,6 +17,8 @@ import toy.board.write.domain.article.repository.ArticleRepository;
 import toy.board.write.domain.article.repository.BoardArticleCountRepository;
 import toy.board.write.domain.article.response.ArticlePageResponse;
 import toy.board.write.domain.article.response.ArticleResponse;
+import toy.board.write.domain.like.entity.ArticleLikeCount;
+import toy.board.write.domain.like.repository.ArticleLikeCountRepository;
 
 import java.util.List;
 
@@ -26,6 +28,7 @@ public class ArticleService {
     private final Snowflake snowflake;
     private final ArticleRepository articleRepository;
     private final BoardArticleCountRepository boardArticleCountRepository;
+    private final ArticleLikeCountRepository articleLikeCountRepository;
     private final OutboxEventPublisher outboxEventPublisher;
 
     @Transactional
@@ -45,6 +48,8 @@ public class ArticleService {
                     BoardArticleCount.init(request.getBoardId(), 1L)
             );
         }
+
+        articleLikeCountRepository.save(ArticleLikeCount.init(article.getArticleId(), 0L));
 
         outboxEventPublisher.publish(
                 EventType.ARTICLE_CREATED,
