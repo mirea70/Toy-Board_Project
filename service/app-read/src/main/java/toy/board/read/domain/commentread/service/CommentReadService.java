@@ -1,0 +1,70 @@
+package toy.board.read.domain.commentread.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import toy.board.common.event.Event;
+import toy.board.common.event.EventPayload;
+import toy.board.read.client.CommentClient;
+import toy.board.read.domain.commentread.eventhandler.CommentCreatedEventHandler;
+import toy.board.read.domain.commentread.eventhandler.CommentDeletedEventHandler;
+import toy.board.read.domain.commentread.repository.CommentIdListRepository;
+import toy.board.read.domain.commentread.repository.CommentQueryModel;
+import toy.board.read.domain.commentread.repository.CommentQueryModelRepository;
+import toy.board.read.domain.commentread.response.CommentReadPageResponse;
+import toy.board.read.domain.commentread.response.CommentReadResponse;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+@Service
+@RequiredArgsConstructor
+public class CommentReadService {
+    private final CommentQueryModelRepository commentQueryModelRepository;
+    private final CommentIdListRepository commentIdListRepository;
+    private final CommentClient commentClient;
+    private final CommentCreatedEventHandler createdHandler;
+    private final CommentDeletedEventHandler deletedHandler;
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public void handleEvent(Event<EventPayload> event) {
+        if (createdHandler.supports(event)) {
+            createdHandler.handle((Event) event);
+        } else if (deletedHandler.supports(event)) {
+            deletedHandler.handle((Event) event);
+        }
+    }
+
+    public CommentReadPageResponse readAll(Long articleId, Long page, Long pageSize) {
+        List<Long> commentIds = commentIdListRepository.readAll(articleId, (page - 1) * pageSize, pageSize);
+        Map<Long, CommentQueryModel> models = commentQueryModelRepository.readAll(commentIds);
+        List<CommentReadResponse> responses = commentIds.stream()
+                .map(models::get)
+                .filter(Objects::nonNull)
+                .map(CommentReadResponse::from)
+                .toList();
+        Long count = commentClient.count(articleId);
+        return CommentReadPageResponse.of(responses, count);
+    }
+
+    public CommentReadResponse read(Long commentId) {
+        return commentQueryModelRepository.read(commentId)
+                .map(CommentReadResponse::from)
+                .orElseThrow();
+    }
+
+    public List<CommentReadResponse> readAllInfiniteScroll(Long articleId, String lastPath, Long pageSize) {
+        // For infinite scroll: for stage9 simplicity, paginate via offset from start of ZSET
+        List<Long> commentIds = commentIdListRepository.readAll(articleId, 0L, pageSize);
+        Map<Long, CommentQueryModel> models = commentQueryModelRepository.readAll(commentIds);
+        return commentIds.stream()
+                .map(models::get)
+                .filter(Objects::nonNull)
+                .map(CommentReadResponse::from)
+                .toList();
+    }
+
+    public Long count(Long articleId) {
+        return commentClient.count(articleId);
+    }
+}
