@@ -20,5 +20,4 @@ public class ArticleCreatedEventPayload implements EventPayload {
     private Long writerId;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
-    private Long boardArticleCount;
 }

@@ -12,9 +12,7 @@ import toy.board.common.snowflake.Snowflake;
 import toy.board.write.domain.article.dto.ArticleCreateRequest;
 import toy.board.write.domain.article.dto.ArticleUpdateRequest;
 import toy.board.write.domain.article.entity.Article;
-import toy.board.write.domain.article.entity.BoardArticleCount;
 import toy.board.write.domain.article.repository.ArticleRepository;
-import toy.board.write.domain.article.repository.BoardArticleCountRepository;
 import toy.board.write.domain.article.response.ArticlePageResponse;
 import toy.board.write.domain.article.response.ArticleResponse;
 import toy.board.write.domain.like.entity.ArticleLikeCount;
@@ -27,7 +25,6 @@ import java.util.List;
 public class ArticleService {
     private final Snowflake snowflake;
     private final ArticleRepository articleRepository;
-    private final BoardArticleCountRepository boardArticleCountRepository;
     private final ArticleLikeCountRepository articleLikeCountRepository;
     private final OutboxEventPublisher outboxEventPublisher;
 
@@ -42,12 +39,6 @@ public class ArticleService {
                         request.getWriterId()
                 )
         );
-        int result = boardArticleCountRepository.increase(request.getBoardId());
-        if (result == 0) {
-            boardArticleCountRepository.save(
-                    BoardArticleCount.init(request.getBoardId(), 1L)
-            );
-        }
 
         articleLikeCountRepository.save(ArticleLikeCount.init(article.getArticleId(), 0L));
 
@@ -61,7 +52,6 @@ public class ArticleService {
                         .writerId(article.getWriterId())
                         .createdAt(article.getCreatedAt())
                         .modifiedAt(article.getModifiedAt())
-                        .boardArticleCount(count(article.getBoardId()))
                         .build(),
                 article.getArticleId()
         );
@@ -97,7 +87,6 @@ public class ArticleService {
     public void delete(Long articleId) {
         Article article = articleRepository.findById(articleId).orElseThrow();
         articleRepository.delete(article);
-        boardArticleCountRepository.decrease(article.getBoardId());
         outboxEventPublisher.publish(
                 EventType.ARTICLE_DELETED,
                 ArticleDeletedEventPayload.builder()
@@ -117,11 +106,7 @@ public class ArticleService {
         return ArticlePageResponse.of(
                 articleRepository.findAll(boardId, (page - 1) * pageSize, pageSize).stream()
                         .map(ArticleResponse::from)
-                        .toList(),
-                articleRepository.count(
-                        boardId,
-                        PageLimitCalculator.calculatePageLimit(page, pageSize, 10L)
-                )
+                        .toList()
         );
     }
 
@@ -130,11 +115,5 @@ public class ArticleService {
                 articleRepository.findAllInfiniteScroll(boardId, pageSize) :
                 articleRepository.findAllInfiniteScroll(boardId, pageSize, lastArticleId);
         return articles.stream().map(ArticleResponse::from).toList();
-    }
-
-    public Long count(Long boardId) {
-        return boardArticleCountRepository.findById(boardId)
-                .map(BoardArticleCount::getArticleCount)
-                .orElse(0L);
     }
 }
