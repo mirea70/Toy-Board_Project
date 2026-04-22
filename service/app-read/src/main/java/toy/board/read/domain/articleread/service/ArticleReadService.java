@@ -89,6 +89,7 @@ public class ArticleReadService {
 
     public List<ArticleReadResponse> readAll(List<Long> articleIds) {
         Map<Long, ArticleQueryModel> articleQueryModelMap = articleQueryModelRepository.readAll(articleIds);
+        Map<Long, Long> viewCounts = viewCountQueryService.countAll(articleIds);
         return articleIds.stream()
                 .map(articleId -> articleQueryModelMap.containsKey(articleId) ?
                         articleQueryModelMap.get(articleId) :
@@ -97,7 +98,7 @@ public class ArticleReadService {
                 .map(articleQueryModel ->
                         ArticleReadResponse.from(
                                 articleQueryModel,
-                                viewCountQueryService.count(articleQueryModel.getArticleId())
+                                viewCounts.getOrDefault(articleQueryModel.getArticleId(), 0L)
                         ))
                 .toList();
     }

@@ -6,6 +6,8 @@ import toy.board.write.domain.view.repository.ArticleViewCountRepository;
 import toy.board.write.domain.view.repository.ArticleViewDistributedLockRepository;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,5 +32,9 @@ public class ArticleViewService {
 
     public Long count(Long articleId) {
         return articleViewCountRepository.read(articleId);
+    }
+
+    public Map<Long, Long> countAll(List<Long> articleIds) {
+        return articleViewCountRepository.readAll(articleIds);
     }
 }
