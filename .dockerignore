@@ -2,9 +2,9 @@
 .gitignore
 .idea
 .vscode
-.gradle
-build
-out
+**/.gradle
+**/build
+**/out
 *.log
 *.iml
 perf
