@@ -15,6 +15,7 @@ import toy.board.read.domain.articleread.repository.ArticleQueryModel;
 import toy.board.read.domain.articleread.repository.ArticleQueryModelRepository;
 import toy.board.read.domain.articleread.response.ArticleReadPageResponse;
 import toy.board.read.domain.articleread.response.ArticleReadResponse;
+import toy.board.read.domain.commentread.repository.CommentCountQueryRepository;
 
 import java.time.Duration;
 import java.util.List;
@@ -26,8 +27,11 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class ArticleReadService {
+    private static final Duration COUNT_TTL = Duration.ofDays(1);
+
     private final ArticleClient articleClient;
     private final CommentClient commentClient;
+    private final CommentCountQueryRepository commentCountQueryRepository;
     private final LikeClient likeClient;
     private final ViewClient viewClient;
     private final ViewCountQueryService viewCountQueryService;
@@ -57,11 +61,20 @@ public class ArticleReadService {
         Optional<ArticleQueryModel> result = articleOpt.map(article ->
                 ArticleQueryModel.create(
                         article,
-                        commentClient.count(articleId),
+                        readCommentCountWithFallback(articleId),
                         likeClient.count(articleId)
                 ));
         result.ifPresent(model -> articleQueryModelRepository.create(model, Duration.ofDays(1)));
         return result;
+    }
+
+    private Long readCommentCountWithFallback(Long articleId) {
+        return commentCountQueryRepository.read(articleId)
+                .orElseGet(() -> {
+                    long fetched = commentClient.count(articleId);
+                    commentCountQueryRepository.createOrUpdate(articleId, fetched, COUNT_TTL);
+                    return fetched;
+                });
     }
 
     public void prepopulate(Long articleId) {
