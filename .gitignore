@@ -71,10 +71,7 @@ perf/results/*/*
 perf/results/*.md
 !perf/results/*/env.md
 !perf/results/*/notes.md
-!perf/results/*/grafana-overview.png
-!perf/results/*/grafana-latency.png
-!perf/results/*/grafana-gc.png
-!perf/results/*/grafana-hikari.png
+!perf/results/*/*.png
 
 # Claude Code (local only)
 .claude/
