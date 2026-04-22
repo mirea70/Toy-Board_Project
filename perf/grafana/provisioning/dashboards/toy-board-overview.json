@@ -317,6 +317,93 @@
         "footer": {"show": false, "reducer": ["sum"], "countRows": false, "fields": ""},
         "sortBy": [{"desc": true, "displayName": "누적 처리 시간"}]
       }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Tomcat Thread Pool — busy vs max (thread pool 포화 감지)",
+      "description": "busy 가 max (기본 200) 에 수렴하면 요청이 Tomcat acceptor 대기열로 밀려 latency 폭증. max 는 대시선(--). 단 metric 노출엔 spring.jmx.enabled=true 필요.",
+      "gridPos": {"x": 0, "y": 66, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "tomcat_threads_busy_threads{application=\"toy-board\"}",
+          "legendFormat": "busy — {{service}} ({{instance}})",
+          "refId": "A"
+        },
+        {
+          "expr": "tomcat_threads_config_max_threads{application=\"toy-board\"}",
+          "legendFormat": "max — {{service}} ({{instance}})",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 0, "min": 0},
+        "overrides": [
+          {
+            "matcher": {"id": "byRegexp", "options": "^max.*"},
+            "properties": [
+              {"id": "custom.lineStyle", "value": {"fill": "dash", "dash": [10, 10]}},
+              {"id": "custom.lineWidth", "value": 1}
+            ]
+          }
+        ]
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "JVM Thread States by instance (I/O wait 확인)",
+      "description": "RUNNABLE 은 실제 CPU 작업. WAITING / TIMED_WAITING / BLOCKED 급증 구간은 외부 I/O 대기 (Redis connection / HTTP client pool / lock). CPU 가 낮은데 이 상태 수치가 높으면 thread 가 놀고 있는 게 아니라 외부 자원 대기 중.",
+      "gridPos": {"x": 12, "y": 66, "w": 12, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "jvm_threads_states_threads{application=\"toy-board\",state=~\"waiting|timed-waiting|blocked|runnable\"}",
+          "legendFormat": "{{state}} — {{service}} ({{instance}})",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 0, "min": 0, "custom": {"fillOpacity": 20}},
+        "overrides": []
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Prometheus Scrape Health — up (1/0) + scrape_duration_seconds",
+      "description": "up=0 구간은 Prometheus 가 target 을 scrape 실패한 시점 (target 이 scrape 엔드포인트 응답 못할 만큼 포화). scrape_duration_seconds 가 timeout (기본 10s) 근처로 튀면 scrape 지연 — 이게 heap/CPU 그래프의 결측/거짓 drop 의 원인.",
+      "gridPos": {"x": 0, "y": 74, "w": 24, "h": 7},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "up{job=~\"toy-board-.*\"}",
+          "legendFormat": "up — {{job}} ({{instance}})",
+          "refId": "A"
+        },
+        {
+          "expr": "scrape_duration_seconds{job=~\"toy-board-.*\"}",
+          "legendFormat": "duration(s) — {{job}} ({{instance}})",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 3, "min": 0},
+        "overrides": [
+          {
+            "matcher": {"id": "byRegexp", "options": "^up.*"},
+            "properties": [
+              {"id": "custom.drawStyle", "value": "bars"},
+              {"id": "custom.fillOpacity", "value": 30},
+              {"id": "max", "value": 1.2}
+            ]
+          }
+        ]
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "min", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
     }
   ]
 }

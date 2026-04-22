@@ -3,6 +3,8 @@ server:
 spring:
   application:
     name: toy-board-app-read
+  jmx:
+    enabled: true
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
