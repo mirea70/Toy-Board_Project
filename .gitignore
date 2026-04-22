@@ -72,6 +72,8 @@ perf/results/*.md
 !perf/results/*/env.md
 !perf/results/*/notes.md
 !perf/results/*/*.png
+!perf/results/*/k6-summary.json
+!perf/results/*/k6-console.txt
 
 # Claude Code (local only)
 .claude/
