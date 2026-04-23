@@ -55,6 +55,17 @@ services:
       retries: 10
     networks: [board]
 
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    container_name: toy-board-redis-exporter
+    command:
+      - --redis.addr=redis://redis:6379
+    ports:
+      - "9121:9121"
+    depends_on:
+      redis: { condition: service_healthy }
+    networks: [board]
+
   kafka:
     image: apache/kafka:3.8.0
     container_name: toy-board-kafka
