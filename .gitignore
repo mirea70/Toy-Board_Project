@@ -70,7 +70,7 @@ perf/k6/METHODOLOGY.md
 
 # Performance Result
 perf/results/*/*
-perf/results/*.md
+#perf/results/*.md
 !perf/results/*/env.md
 !perf/results/*/notes.md
 !perf/results/*/*.png
