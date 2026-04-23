@@ -404,6 +404,77 @@
         ]
       },
       "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "min", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Redis Health — connection / blocked / rejected / ops",
+      "description": "Redis 병목 판별. connected_clients 가 maxclients (기본 10K) 에 수렴하거나 rejected_connections rate 가 0 을 넘으면 client pool 포화. blocked_clients > 0 은 WAIT/BLPOP 대기. instantaneous_ops_per_sec (우측 y축) 가 plateau 이면 Redis 자체 포화 후보.",
+      "gridPos": {"x": 0, "y": 81, "w": 24, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "redis_connected_clients",
+          "legendFormat": "connected_clients",
+          "refId": "A"
+        },
+        {
+          "expr": "redis_blocked_clients",
+          "legendFormat": "blocked_clients",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(redis_rejected_connections_total[1m])",
+          "legendFormat": "rejected/sec",
+          "refId": "C"
+        },
+        {
+          "expr": "redis_instantaneous_ops_per_sec",
+          "legendFormat": "ops/sec (right axis)",
+          "refId": "D"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 0, "min": 0},
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "ops/sec (right axis)"},
+            "properties": [
+              {"id": "custom.axisPlacement", "value": "right"},
+              {"id": "unit", "value": "ops"},
+              {"id": "custom.axisLabel", "value": "ops/sec"}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "rejected/sec"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}},
+              {"id": "custom.lineWidth", "value": 2}
+            ]
+          }
+        ]
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "write-app inbound concurrency by URI (Little's Law)",
+      "description": "write-app 이 URI 별로 동시에 처리 중이던 평균 요청 수 (= 초당 처리 시간의 rate). read-app 에서 write-app 으로 향하는 RestClient 호출량을 간접 관측. 특정 URI 의 concurrency 급증은 read-app 쪽 thread 가 해당 HTTP 호출로 park 돼있다는 시그널.",
+      "gridPos": {"x": 0, "y": 89, "w": 24, "h": 8},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "sum by (uri) (rate(http_server_requests_seconds_sum{job=\"toy-board-write\",uri!~\"/actuator/.*\"}[1m]))",
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {"unit": "short", "decimals": 3, "min": 0, "custom": {"fillOpacity": 15}},
+        "overrides": []
+      },
+      "options": {"legend": {"displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"]}, "tooltip": {"mode": "multi", "sort": "desc"}}
     }
   ]
 }

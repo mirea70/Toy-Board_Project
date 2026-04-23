@@ -32,6 +32,10 @@ scrape_configs:
       - target_label: service
         replacement: read-app
 
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
   - job_name: prometheus
     static_configs:
       - targets: ["localhost:9090"]
