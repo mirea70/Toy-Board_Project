@@ -1,7 +1,6 @@
 # Gradle
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
@@ -14,6 +13,9 @@ build/
 hs_err_pid*
 replay_pid*
 *.hprof
+
+# Gradle wrapper jar must be tracked (placed after *.jar so the exception wins)
+!gradle/wrapper/gradle-wrapper.jar
 
 # IntelliJ IDEA
 .idea/
@@ -79,7 +81,6 @@ perf/results/*.md
 .claude/
 docs/superpowers/
 
-# Local infra / ops (not meant to be shared)
-ops/nginx/nginx.conf
-ops/mysql/init/*.sql
-ops/mysql/init/*.sh
+# Local infra / ops
+# nginx.conf / mysql schema 는 아키텍처 정의라 tracking.
+# 민감 시드 스크립트 (패스워드/토큰 포함) 가 추가되면 여기에 개별 경로로 예외 등록.
