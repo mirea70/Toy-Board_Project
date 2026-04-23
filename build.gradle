@@ -38,3 +38,5 @@ allprojects {
         useJUnitPlatform()
     }
 }
+
+tasks.named('bootJar') { enabled = false }

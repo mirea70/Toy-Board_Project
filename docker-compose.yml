@@ -129,13 +129,13 @@ services:
       start_period: 40s
     networks: [board]
 
-  read-app:
+  article-read:
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        MODULE: app-read
-    image: toy-board-read:local
+        MODULE: app-article-read
+    image: toy-board-article-read:local
     depends_on:
       redis: { condition: service_healthy }
       kafka: { condition: service_healthy }
@@ -144,12 +144,45 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_KAFKA_CONSUMER_GROUP_ID: toy-board-app-read
+      SPRING_KAFKA_CONSUMER_GROUP_ID: toy-board-app-article-read
       ENDPOINTS_TOY_BOARD_WRITE_APP_URL: http://write-app:8080
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
       SERVER_PORT: 8080
     deploy:
-      replicas: 2
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "512M"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 40s
+    networks: [board]
+
+  sub-read:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: app-sub-read
+    image: toy-board-sub-read:local
+    depends_on:
+      redis: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      write-app: { condition: service_healthy }
+    environment:
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: toy-board-app-sub-read
+      ENDPOINTS_TOY_BOARD_WRITE_APP_URL: http://write-app:8080
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,metrics,prometheus
+      SERVER_PORT: 8080
+    deploy:
+      replicas: 1
       resources:
         limits:
           cpus: "1.0"
@@ -166,7 +199,7 @@ services:
   nginx:
     image: nginx:1.27-alpine
     container_name: toy-board-nginx
-    depends_on: [write-app, read-app]
+    depends_on: [write-app, article-read, sub-read]
     ports:
       - "8080:80"
     volumes:
