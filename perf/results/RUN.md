@@ -17,7 +17,7 @@ export STAGE_ID=stageN           # 예: stage14
 export PREV_STAGE=stageN-1       # 예: stage13
 
 mkdir -p perf/results/$STAGE_ID
-cp perf/results/TEMPLATE.md        perf/results/$STAGE_ID/notes.md
+cp perf/results/$PREV_STAGE/notes.md perf/results/$STAGE_ID/notes.md
 cp perf/results/$PREV_STAGE/env.md perf/results/$STAGE_ID/env.md
 ```
 
@@ -179,15 +179,17 @@ Grafana 우상단 time picker → "Absolute time range" 로 정확히 지정.
 
 **상황 따라**
 
-| 파일명 | 언제 |
-|---|---|
-| `grafana-endpoint.png` | 엔드포인트별 누적 req / CPU time / 건당 평균 CPU |
-| `grafana-kafka-lag.png` | MSA (stage9+) consumer lag 추적 |
-| `grafana-tomcat-thread.png` | Tomcat busy / queuing 감지 |
-| `grafana-jvm-thread.png` | JVM 스레드 상태 체크 |
-| `grafana-prometheus-scrape.png` | 스크래핑 실패 여부 체크 |
-| `grafana-redis-health.png` | Redis 연결 상태 감지 |
-| `grafana-write-app-concurrency.png` | write 앱 동시 요청 감지 |
+| 파일명                                 | 언제                                   |
+|-------------------------------------|--------------------------------------|
+| `grafana-endpoint.png`              | 엔드포인트별 누적 req / CPU time / 건당 평균 CPU |
+| `grafana-endpoint-latency95.png`    | 엔드포인트별 95% 수준 latency                |
+| `grafana-request-rate.png`          | 엔드포인트별 처리량 (Req/s)                   |
+| `grafana-kafka-lag.png`             | MSA (stage9+) consumer lag 추적        |
+| `grafana-tomcat-thread.png`         | Tomcat busy / queuing 감지             |
+| `grafana-jvm-thread.png`            | JVM 스레드 상태 체크                        |
+| `grafana-prometheus-scrape.png`     | 스크래핑 실패 여부 체크                        |
+| `grafana-redis-health.png`          | Redis 연결 상태 감지                       |
+| `grafana-write-app-concurrency.png` | write 앱 동시 요청 감지                     |
 
 > hikari / gc 등 detail 패널은 overview 안의 Legend 숫자로 충분. 단독 캡처는
 > `notes.md` 에서 핵심 수치 보충할 때만 추가.
