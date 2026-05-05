@@ -17,7 +17,7 @@
 
 초기에는 단일 서버 모놀리틱 아키텍처로 출발했으며, 문제 해결 과정을 거쳐 아래 형태로 변화하여 크게 write 서비스, article-read 서비스, sub-read 서비스로 분리되어 있습니다. 비용 문제로 인해 호스트 1대의 자원을 Docker 컨테이너 단위로 분할하여 진행하고 있으며, 서버 1대의 최대 가용 자원은 CPU: 1.0(호스트의 1코어), 메모리: 512MB로 제한하는 규칙을 기준으로 잡았습니다.
 
-<img width="750" height="450" alt="image" src="https://github.com/user-attachments/assets/a2ca35bf-16cd-45c1-91c7-7272eb0bc0c3" />
+<img width="750" height="450" alt="image" src="resources/images/distributed-architecture.png" />
 
 - **write 서비스**: 서비스의 모든 쓰기 기능을 담당하며, 조회수 데이터의 백업 처리도 수행합니다.
 - **article-read 서비스** : 게시글 읽기 기능만을 담당합니다.
