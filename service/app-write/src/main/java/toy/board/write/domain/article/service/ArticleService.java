@@ -87,6 +87,7 @@ public class ArticleService {
     public void delete(Long articleId) {
         Article article = articleRepository.findById(articleId).orElseThrow();
         articleRepository.delete(article);
+        articleLikeCountRepository.deleteById(article.getArticleId());
         outboxEventPublisher.publish(
                 EventType.ARTICLE_DELETED,
                 ArticleDeletedEventPayload.builder()
