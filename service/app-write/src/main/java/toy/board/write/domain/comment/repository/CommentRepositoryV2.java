@@ -12,8 +12,11 @@ import java.util.Optional;
 @Repository
 public interface CommentRepositoryV2 extends JpaRepository<CommentV2, Long> {
 
-    @Query("SELECT c FROM CommentV2 c WHERE c.commentPath.path = :path")
-    Optional<CommentV2> findByPath(@Param("path") String path);
+    @Query("SELECT c FROM CommentV2 c WHERE c.articleId = :articleId AND c.commentPath.path = :path")
+    Optional<CommentV2> findByArticleIdAndPath(
+            @Param("articleId") Long articleId,
+            @Param("path") String path
+    );
 
     @Query(
             value = "SELECT path FROM comment_v2 " +

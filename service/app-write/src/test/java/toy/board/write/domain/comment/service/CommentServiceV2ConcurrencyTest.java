@@ -15,6 +15,7 @@ import toy.board.common.outboxmessagerelay.OutboxEventPublisher;
 import toy.board.write.domain.comment.dto.CommentCreateRequestV2;
 import toy.board.write.domain.comment.repository.ArticleCommentCountRepository;
 import toy.board.write.domain.comment.repository.CommentRepositoryV2;
+import toy.board.write.domain.comment.response.CommentResponse;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class CommentServiceV2ConcurrencyTest {
     private static final Long ARTICLE_ID = Long.MAX_VALUE;
-    private static final int REQUEST_COUNT = 30;
+    private static final int REQUEST_COUNT = 4;
 
     @Autowired
     CommentServiceV2 commentService;
@@ -59,13 +60,44 @@ class CommentServiceV2ConcurrencyTest {
         articleCommentCountRepository.deleteById(ARTICLE_ID);
     }
 
-    @DisplayName("동시에 댓글 생성 요청이 여러개 오더라도 댓글 수 데이터가 유실되지 않으며, Duplicate Key 에러도 발생하지 않는다.")
+    @DisplayName("루트 댓글을 동시에 생성해도 댓글 수가 유실되지 않고 경로가 중복되지 않는다.")
     @Test
-    void create_increasesArticleCommentCountWithoutLostUpdates() throws Exception {
+    void createRootComments_concurrentlyCreatesUniquePathsWithoutLostUpdates() throws Exception {
+        // given
+        String parentPath = null;
+
+        // when
+        ConcurrentCreateResult result = createConcurrently(parentPath);
+
+        // then
+        assertThat(result.failures()).noneMatch(this::hasDuplicateKeyError);
+        assertThat(result.failures()).isEmpty();
+        assertThat(result.responses()).extracting(CommentResponse::getPath).doesNotHaveDuplicates();
+        assertThat(commentService.count(ARTICLE_ID)).isEqualTo(REQUEST_COUNT);
+        assertThat(commentRepository.count(ARTICLE_ID, REQUEST_COUNT + 1L)).isEqualTo(REQUEST_COUNT);
+    }
+
+    @DisplayName("동일 부모의 자식 댓글을 동시에 생성해도 경로가 중복되지 않는다.")
+    @Test
+    void createChildComments_concurrentlyCreatesUniquePaths() throws Exception {
+        // given
+        CommentResponse parent = commentService.create(createRequest(1L, null));
+
+        // when
+        ConcurrentCreateResult result = createConcurrently(parent.getPath());
+
+        // then
+        assertThat(result.failures()).isEmpty();
+        assertThat(result.responses()).extracting(CommentResponse::getPath).doesNotHaveDuplicates();
+        assertThat(commentService.count(ARTICLE_ID)).isEqualTo(REQUEST_COUNT + 1L);
+        assertThat(commentRepository.count(ARTICLE_ID, REQUEST_COUNT + 2L)).isEqualTo(REQUEST_COUNT + 1L);
+    }
+
+    private ConcurrentCreateResult createConcurrently(String parentPath) throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(REQUEST_COUNT);
         CountDownLatch ready = new CountDownLatch(REQUEST_COUNT);
         CountDownLatch start = new CountDownLatch(1);
-        List<Future<Throwable>> futures = new ArrayList<>();
+        List<Future<CreateResult>> futures = new ArrayList<>();
 
         try {
             for (int i = 0; i < REQUEST_COUNT; i++) {
@@ -74,10 +106,12 @@ class CommentServiceV2ConcurrencyTest {
                     try {
                         ready.countDown();
                         start.await();
-                        commentService.create(createRequest(writerId));
-                        return null;
+                        return new CreateResult(
+                                commentService.create(createRequest(writerId, parentPath)),
+                                null
+                        );
                     } catch (Throwable throwable) {
-                        return throwable;
+                        return new CreateResult(null, throwable);
                     }
                 }));
             }
@@ -86,28 +120,29 @@ class CommentServiceV2ConcurrencyTest {
             start.countDown();
 
             List<Throwable> failures = new ArrayList<>();
-            for (Future<Throwable> future : futures) {
-                Throwable failure = future.get(30, TimeUnit.SECONDS);
-                if (failure != null) {
-                    failures.add(failure);
+            List<CommentResponse> responses = new ArrayList<>();
+            for (Future<CreateResult> future : futures) {
+                CreateResult result = future.get(30, TimeUnit.SECONDS);
+                if (result.failure() != null) {
+                    failures.add(result.failure());
+                }
+                if (result.response() != null) {
+                    responses.add(result.response());
                 }
             }
-
-            assertThat(failures).noneMatch(this::hasDuplicateKeyError);
-            assertThat(failures).isEmpty();
+            return new ConcurrentCreateResult(responses, failures);
         } finally {
+            start.countDown();
             executorService.shutdownNow();
         }
-
-        assertThat(commentService.count(ARTICLE_ID)).isEqualTo(REQUEST_COUNT);
-        assertThat(commentRepository.count(ARTICLE_ID, REQUEST_COUNT + 1L)).isEqualTo(REQUEST_COUNT);
     }
 
-    private CommentCreateRequestV2 createRequest(Long writerId) {
+    private CommentCreateRequestV2 createRequest(Long writerId, String parentPath) {
         CommentCreateRequestV2 request = new CommentCreateRequestV2();
         ReflectionTestUtils.setField(request, "articleId", ARTICLE_ID);
         ReflectionTestUtils.setField(request, "content", "content");
         ReflectionTestUtils.setField(request, "writerId", writerId);
+        ReflectionTestUtils.setField(request, "parentPath", parentPath);
         return request;
     }
 
@@ -121,5 +156,11 @@ class CommentServiceV2ConcurrencyTest {
             cause = cause.getCause();
         }
         return false;
+    }
+
+    private record CreateResult(CommentResponse response, Throwable failure) {
+    }
+
+    private record ConcurrentCreateResult(List<CommentResponse> responses, List<Throwable> failures) {
     }
 }

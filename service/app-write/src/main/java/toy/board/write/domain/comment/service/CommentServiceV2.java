@@ -1,6 +1,9 @@
 package toy.board.write.domain.comment.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import toy.board.common.event.EventType;
@@ -8,6 +11,7 @@ import toy.board.common.outboxmessagerelay.OutboxEventPublisher;
 import toy.board.common.event.payload.CommentCreatedEventPayload;
 import toy.board.common.event.payload.CommentDeletedEventPayload;
 import toy.board.common.snowflake.Snowflake;
+import toy.board.write.common.error.exception.CommentPathCollisionException;
 import toy.board.write.domain.comment.dto.CommentCreateRequestV2;
 import toy.board.write.domain.comment.entity.ArticleCommentCount;
 import toy.board.write.domain.comment.entity.CommentPath;
@@ -28,6 +32,11 @@ public class CommentServiceV2 {
     private final ArticleCommentCountRepository articleCommentCountRepository;
     private final OutboxEventPublisher outboxEventPublisher;
 
+    @Retryable(
+            retryFor = CommentPathCollisionException.class,
+            maxAttempts = 10,
+            backoff = @Backoff(delay = 10, maxDelay = 100, multiplier = 2, random = true)
+    )
     @Transactional
     public CommentResponse create(CommentCreateRequestV2 request) {
         CommentV2 parent = findParent(request);
@@ -44,6 +53,7 @@ public class CommentServiceV2 {
                         )
                 )
         );
+        flushComment();
 
         articleCommentCountRepository.increase(request.getArticleId());
 
@@ -65,13 +75,35 @@ public class CommentServiceV2 {
         return CommentResponse.from(comment);
     }
 
+    private void flushComment() {
+        try {
+            commentRepository.flush();
+        } catch (DataIntegrityViolationException exception) {
+            if (hasCommentPathUniqueConstraint(exception)) {
+                throw new CommentPathCollisionException(exception);
+            }
+            throw exception;
+        }
+    }
+
+    private boolean hasCommentPathUniqueConstraint(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause != null) {
+            if (cause.getMessage() != null && cause.getMessage().contains("idx_article_id_path")) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
+    }
+
     private CommentV2 findParent(CommentCreateRequestV2 request) {
         String parentPath = request.getParentPath();
         if (parentPath == null) {
             return null;
         }
 
-        return commentRepository.findByPath(parentPath)
+        return commentRepository.findByArticleIdAndPath(request.getArticleId(), parentPath)
                 .filter(Predicate.not(CommentV2::getDeleted))
                 .orElseThrow();
     }
@@ -121,7 +153,10 @@ public class CommentServiceV2 {
         commentRepository.delete(comment);
         articleCommentCountRepository.decrease(comment.getArticleId());
         if (!comment.isRoot()) {
-            commentRepository.findByPath(comment.getCommentPath().getParentPath())
+            commentRepository.findByArticleIdAndPath(
+                            comment.getArticleId(),
+                            comment.getCommentPath().getParentPath()
+                    )
                     .filter(CommentV2::getDeleted)
                     .filter(Predicate.not(this::hasChildren))
                     .ifPresent(this::delete);
