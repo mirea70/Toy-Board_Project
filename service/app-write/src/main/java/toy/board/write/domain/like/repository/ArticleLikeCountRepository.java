@@ -17,7 +17,7 @@ public interface ArticleLikeCountRepository extends JpaRepository<ArticleLikeCou
     Optional<ArticleLikeCount> findLockedByArticleId(Long articleId);
 
     @Query(
-            value = "INSERT INTO article_like_count (article_id, like_count) VALUES (:articleId, 1) " +
+            value = "INSERT INTO article_like_count (article_id, like_count, version) VALUES (:articleId, 1, 0) " +
                     "ON DUPLICATE KEY UPDATE like_count = like_count + 1",
             nativeQuery = true
     )
