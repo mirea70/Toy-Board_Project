@@ -74,18 +74,14 @@ public class ArticleLikeService {
 
     /**
      * 2. 비관적 락 : SELECT ... FOR UPDATE + UPDATE
-     *
-     * findLockedByArticleId로 조회할 때 로우가 없으면 락이 걸리지 않다보니, 동시성 이슈 발생할텐데 이에 대한 처리가 있어야할 것 같아요.
      */
     @Transactional
     public void likePessimisticLock2(Long articleId, Long userId) {
         articleLikeRepository.save(
                 ArticleLike.create(snowflake.nextId(), articleId, userId)
         );
-        ArticleLikeCount articleLikeCount = articleLikeCountRepository.findLockedByArticleId(articleId)
-                .orElseGet(() -> ArticleLikeCount.init(articleId, 0L));
+        ArticleLikeCount articleLikeCount = findLockedArticleLikeCount(articleId);
         articleLikeCount.increase();
-        articleLikeCountRepository.save(articleLikeCount);
     }
 
     @Transactional
@@ -93,9 +89,16 @@ public class ArticleLikeService {
         articleLikeRepository.findByArticleIdAndUserId(articleId, userId)
                 .ifPresent(articleLike -> {
                     articleLikeRepository.delete(articleLike);
-                    ArticleLikeCount articleLikeCount = articleLikeCountRepository.findLockedByArticleId(articleId).orElseThrow();
+                    ArticleLikeCount articleLikeCount = findLockedArticleLikeCount(articleId);
                     articleLikeCount.decrease();
                 });
+    }
+
+    private ArticleLikeCount findLockedArticleLikeCount(Long articleId) {
+        return articleLikeCountRepository.findLockedByArticleId(articleId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Article like count does not exist. articleId=" + articleId
+                ));
     }
 
     /**

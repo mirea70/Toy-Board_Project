@@ -22,9 +22,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongConsumer;
 import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @MockBean({
@@ -61,12 +63,93 @@ class ArticleLikeServiceConcurrencyTest {
     void likePessimisticLock1_increasesArticleLikeCountWithoutLostUpdates() throws Exception {
         // given
         articleLikeCountRepository.save(ArticleLikeCount.init(ARTICLE_ID, 0L));
+
+        // when
+        List<Throwable> failures = executeConcurrently(
+                userId -> articleLikeService.likePessimisticLock1(ARTICLE_ID, userId)
+        );
+
+        // then
+        assertThat(failures).isEmpty();
+        assertThat(articleLikeService.count(ARTICLE_ID)).isEqualTo(REQUEST_COUNT);
+        assertThat(findArticleLikes()).hasSize(REQUEST_COUNT);
+    }
+
+    @DisplayName("카운트 행이 존재하면 여러 사용자의 동시 좋아요 요청을 비관적 락으로 직렬화한다.")
+    @Test
+    void likePessimisticLock2_increasesArticleLikeCountWithoutLostUpdates() throws Exception {
+        // given
+        articleLikeCountRepository.save(ArticleLikeCount.init(ARTICLE_ID, 0L));
+
+        // when
+        List<Throwable> failures = executeConcurrently(
+                userId -> articleLikeService.likePessimisticLock2(ARTICLE_ID, userId)
+        );
+
+        // then
+        assertThat(failures).isEmpty();
+        assertThat(articleLikeService.count(ARTICLE_ID)).isEqualTo(REQUEST_COUNT);
+        assertThat(findArticleLikes()).hasSize(REQUEST_COUNT);
+    }
+
+    @DisplayName("카운트 행이 없으면 좋아요 요청을 실패시키고 좋아요 저장을 롤백한다.")
+    @Test
+    void likePessimisticLock2_rollsBackWhenArticleLikeCountDoesNotExist() {
+        // given
+        long userId = 1L;
+
+        // when & then
+        assertThatThrownBy(() -> articleLikeService.likePessimisticLock2(ARTICLE_ID, userId))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId)).isEmpty();
+    }
+
+    @DisplayName("카운트 행이 존재하면 여러 사용자의 동시 좋아요 취소 요청을 비관적 락으로 직렬화한다.")
+    @Test
+    void unlikePessimisticLock2_decreasesArticleLikeCountWithoutLostUpdates() throws Exception {
+        // given
+        articleLikeCountRepository.save(ArticleLikeCount.init(ARTICLE_ID, (long) REQUEST_COUNT));
+        LongStream.rangeClosed(1, REQUEST_COUNT)
+                .mapToObj(userId -> ArticleLike.create(ARTICLE_ID - userId, ARTICLE_ID, userId))
+                .forEach(articleLikeRepository::save);
+
+        // when
+        List<Throwable> failures = executeConcurrently(
+                userId -> articleLikeService.unlikePessimisticLock2(ARTICLE_ID, userId)
+        );
+
+        // then
+        assertThat(failures).isEmpty();
+        assertThat(articleLikeService.count(ARTICLE_ID)).isZero();
+        assertThat(findArticleLikes()).isEmpty();
+    }
+
+    @DisplayName("카운트 행이 없으면 좋아요 취소 요청을 실패시키고 좋아요 삭제를 롤백한다.")
+    @Test
+    void unlikePessimisticLock2_rollsBackWhenArticleLikeCountDoesNotExist() {
+        // given
+        long userId = 1L;
+        articleLikeRepository.save(ArticleLike.create(ARTICLE_ID - userId, ARTICLE_ID, userId));
+
+        // when & then
+        assertThatThrownBy(() -> articleLikeService.unlikePessimisticLock2(ARTICLE_ID, userId))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId)).isPresent();
+    }
+
+    private List<ArticleLike> findArticleLikes() {
+        return LongStream.rangeClosed(1, REQUEST_COUNT)
+                .mapToObj(userId -> articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId))
+                .flatMap(java.util.Optional::stream)
+                .toList();
+    }
+
+    private List<Throwable> executeConcurrently(LongConsumer operation) throws Exception {
         ExecutorService executorService = Executors.newFixedThreadPool(REQUEST_COUNT);
         CountDownLatch ready = new CountDownLatch(REQUEST_COUNT);
         CountDownLatch start = new CountDownLatch(1);
         List<Future<Throwable>> futures = new ArrayList<>();
 
-        // when
         try {
             for (long userId = 1; userId <= REQUEST_COUNT; userId++) {
                 long concurrentUserId = userId;
@@ -74,7 +157,7 @@ class ArticleLikeServiceConcurrencyTest {
                     try {
                         ready.countDown();
                         start.await();
-                        articleLikeService.likePessimisticLock1(ARTICLE_ID, concurrentUserId);
+                        operation.accept(concurrentUserId);
                         return null;
                     } catch (Throwable throwable) {
                         return throwable;
@@ -92,21 +175,10 @@ class ArticleLikeServiceConcurrencyTest {
                     failures.add(failure);
                 }
             }
-
-            // then
-            assertThat(failures).isEmpty();
-            assertThat(articleLikeService.count(ARTICLE_ID)).isEqualTo(REQUEST_COUNT);
-            assertThat(findArticleLikes()).hasSize(REQUEST_COUNT);
+            return failures;
         } finally {
             start.countDown();
             executorService.shutdownNow();
         }
-    }
-
-    private List<ArticleLike> findArticleLikes() {
-        return LongStream.rangeClosed(1, REQUEST_COUNT)
-                .mapToObj(userId -> articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId))
-                .flatMap(java.util.Optional::stream)
-                .toList();
     }
 }
