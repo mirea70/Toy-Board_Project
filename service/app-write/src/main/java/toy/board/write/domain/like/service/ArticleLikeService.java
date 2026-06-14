@@ -1,6 +1,9 @@
 package toy.board.write.domain.like.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import toy.board.common.event.EventType;
@@ -103,17 +106,22 @@ public class ArticleLikeService {
 
     /**
      * 3. 낙관적 락
-     * Version 충돌 시(OptimisticLockingFailureException) catch 후 재시도 로직(@Retryable 등)이 필요할 것 같아요.
      */
+    @Retryable(
+            retryFor = OptimisticLockingFailureException.class,
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 20, maxDelay = 200, multiplier = 2, random = true)
+    )
     @Transactional
     public void likeOptimisticLock(Long articleId, Long userId) {
         articleLikeRepository.save(
                 ArticleLike.create(snowflake.nextId(), articleId, userId)
         );
         ArticleLikeCount articleLikeCount = articleLikeCountRepository.findById(articleId)
-                .orElseGet(() -> ArticleLikeCount.init(articleId, 0L));
+                .orElseThrow(() -> new IllegalStateException(
+                        "Article like count does not exist. articleId=" + articleId
+                ));
         articleLikeCount.increase();
-        articleLikeCountRepository.save(articleLikeCount);
     }
 
     @Transactional

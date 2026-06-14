@@ -5,6 +5,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-aop'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.retry:spring-retry'
     runtimeOnly 'com.mysql:mysql-connector-j'
 
     implementation project(':common:snowflake')

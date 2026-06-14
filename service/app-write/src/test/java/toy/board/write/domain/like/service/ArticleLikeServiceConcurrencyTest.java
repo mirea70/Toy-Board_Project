@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ArticleLikeServiceConcurrencyTest {
     private static final Long ARTICLE_ID = Long.MAX_VALUE - 1;
     private static final int REQUEST_COUNT = 30;
+    private static final int OPTIMISTIC_LOCK_REQUEST_COUNT = 4;
 
     @Autowired
     ArticleLikeService articleLikeService;
@@ -137,6 +138,36 @@ class ArticleLikeServiceConcurrencyTest {
         assertThat(articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId)).isPresent();
     }
 
+    @DisplayName("제한된 동시 좋아요 요청에서 Version 충돌이 발생해도 재시도하여 모두 반영한다.")
+    @Test
+    void likeOptimisticLock_retriesVersionConflictsWithoutLostUpdates() throws Exception {
+        // given
+        articleLikeCountRepository.save(ArticleLikeCount.init(ARTICLE_ID, 0L));
+
+        // when
+        List<Throwable> failures = executeConcurrently(
+                userId -> articleLikeService.likeOptimisticLock(ARTICLE_ID, userId),
+                OPTIMISTIC_LOCK_REQUEST_COUNT
+        );
+
+        // then
+        assertThat(failures).isEmpty();
+        assertThat(articleLikeService.count(ARTICLE_ID)).isEqualTo(OPTIMISTIC_LOCK_REQUEST_COUNT);
+        assertThat(findArticleLikes()).hasSize(OPTIMISTIC_LOCK_REQUEST_COUNT);
+    }
+
+    @DisplayName("카운트 행이 없으면 낙관적 락 좋아요 요청을 재시도하지 않고 롤백한다.")
+    @Test
+    void likeOptimisticLock_doesNotRetryNonOptimisticLockingFailure() {
+        // given
+        long userId = 1L;
+
+        // when & then
+        assertThatThrownBy(() -> articleLikeService.likeOptimisticLock(ARTICLE_ID, userId))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId)).isEmpty();
+    }
+
     private List<ArticleLike> findArticleLikes() {
         return LongStream.rangeClosed(1, REQUEST_COUNT)
                 .mapToObj(userId -> articleLikeRepository.findByArticleIdAndUserId(ARTICLE_ID, userId))
@@ -145,13 +176,17 @@ class ArticleLikeServiceConcurrencyTest {
     }
 
     private List<Throwable> executeConcurrently(LongConsumer operation) throws Exception {
-        ExecutorService executorService = Executors.newFixedThreadPool(REQUEST_COUNT);
-        CountDownLatch ready = new CountDownLatch(REQUEST_COUNT);
+        return executeConcurrently(operation, REQUEST_COUNT);
+    }
+
+    private List<Throwable> executeConcurrently(LongConsumer operation, int requestCount) throws Exception {
+        ExecutorService executorService = Executors.newFixedThreadPool(requestCount);
+        CountDownLatch ready = new CountDownLatch(requestCount);
         CountDownLatch start = new CountDownLatch(1);
         List<Future<Throwable>> futures = new ArrayList<>();
 
         try {
-            for (long userId = 1; userId <= REQUEST_COUNT; userId++) {
+            for (long userId = 1; userId <= requestCount; userId++) {
                 long concurrentUserId = userId;
                 futures.add(executorService.submit(() -> {
                     try {
