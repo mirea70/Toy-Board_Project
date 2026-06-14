@@ -17,6 +17,8 @@ import toy.board.write.domain.article.entity.Article;
 import toy.board.write.domain.article.repository.ArticleRepository;
 import toy.board.write.domain.like.entity.ArticleLikeCount;
 import toy.board.write.domain.like.repository.ArticleLikeCountRepository;
+import toy.board.write.domain.view.entity.ArticleViewCount;
+import toy.board.write.domain.view.repository.ArticleViewCountBackupRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,6 +44,9 @@ class ArticleServiceTest {
     @Autowired
     ArticleLikeCountRepository articleLikeCountRepository;
 
+    @Autowired
+    ArticleViewCountBackupRepository articleViewCountBackupRepository;
+
     @MockBean
     OutboxEventPublisher outboxEventPublisher;
 
@@ -52,11 +57,12 @@ class ArticleServiceTest {
 
     @AfterEach
     void cleanUp() {
+        articleViewCountBackupRepository.deleteById(ARTICLE_ID);
         articleLikeCountRepository.deleteById(ARTICLE_ID);
         articleRepository.deleteById(ARTICLE_ID);
     }
 
-    @DisplayName("게시글을 삭제하면 게시글 좋아요 수 데이터도 함께 삭제하고, 이벤트를 발행한다.")
+    @DisplayName("게시글을 삭제하면 좋아요 수와 조회 수 백업 데이터도 함께 삭제하고, 이벤트를 발행한다.")
     @Test
     void delete_removesArticleAndArticleLikeCount() {
         // given
@@ -68,6 +74,7 @@ class ArticleServiceTest {
         // then
         assertThat(articleRepository.findById(ARTICLE_ID)).isEmpty();
         assertThat(articleLikeCountRepository.findById(ARTICLE_ID)).isEmpty();
+        assertThat(articleViewCountBackupRepository.findById(ARTICLE_ID)).isEmpty();
         ArgumentCaptor<ArticleDeletedEventPayload> payloadCaptor =
                 ArgumentCaptor.forClass(ArticleDeletedEventPayload.class);
         verify(outboxEventPublisher).publish(
@@ -86,7 +93,7 @@ class ArticleServiceTest {
                 .containsExactly(ARTICLE_ID, "title", "content", 1L, 1L);
     }
 
-    @DisplayName("게시글 삭제 중 예외가 발생하면 게시글과 좋아요 수 데이터 삭제를 모두 롤백한다.")
+    @DisplayName("게시글 삭제 중 예외가 발생하면 게시글과 종속 카운트 데이터 삭제를 모두 롤백한다.")
     @Test
     void delete_rollsBackArticleAndArticleLikeCountWhenEventPublishFails() {
         // given
@@ -100,6 +107,7 @@ class ArticleServiceTest {
                 .isInstanceOf(RuntimeException.class);
         assertThat(articleRepository.findById(ARTICLE_ID)).isPresent();
         assertThat(articleLikeCountRepository.findById(ARTICLE_ID)).isPresent();
+        assertThat(articleViewCountBackupRepository.findById(ARTICLE_ID)).isPresent();
         verify(outboxEventPublisher).publish(
                 eq(EventType.ARTICLE_DELETED),
                 any(ArticleDeletedEventPayload.class),
@@ -110,5 +118,6 @@ class ArticleServiceTest {
     private void createArticleAndArticleLikeCount() {
         articleRepository.save(Article.create(ARTICLE_ID, "title", "content", 1L, 1L));
         articleLikeCountRepository.save(ArticleLikeCount.init(ARTICLE_ID, 0L));
+        articleViewCountBackupRepository.save(ArticleViewCount.init(ARTICLE_ID, 100L));
     }
 }

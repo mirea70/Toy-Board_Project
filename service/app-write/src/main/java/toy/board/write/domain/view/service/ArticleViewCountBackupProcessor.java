@@ -20,7 +20,7 @@ public class ArticleViewCountBackupProcessor {
         int result = articleViewCountBackupRepository.updateViewCount(articleId, viewCount);
         if (result == 0) {
             articleViewCountBackupRepository.findById(articleId)
-                    .ifPresentOrElse(ignored -> { },
+                    .ifPresentOrElse(ignored -> {},
                             () -> articleViewCountBackupRepository.save(ArticleViewCount.init(articleId, viewCount))
                     );
         }
