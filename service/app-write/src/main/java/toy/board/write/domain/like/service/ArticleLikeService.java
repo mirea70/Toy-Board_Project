@@ -74,6 +74,8 @@ public class ArticleLikeService {
 
     /**
      * 2. 비관적 락 : SELECT ... FOR UPDATE + UPDATE
+     *
+     * findLockedByArticleId로 조회할 때 로우가 없으면 락이 걸리지 않다보니, 동시성 이슈 발생할텐데 이에 대한 처리가 있어야할 것 같아요.
      */
     @Transactional
     public void likePessimisticLock2(Long articleId, Long userId) {
@@ -98,6 +100,7 @@ public class ArticleLikeService {
 
     /**
      * 3. 낙관적 락
+     * Version 충돌 시(OptimisticLockingFailureException) catch 후 재시도 로직(@Retryable 등)이 필요할 것 같아요.
      */
     @Transactional
     public void likeOptimisticLock(Long articleId, Long userId) {
