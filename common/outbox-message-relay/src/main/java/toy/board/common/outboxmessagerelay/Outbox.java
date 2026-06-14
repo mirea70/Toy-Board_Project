@@ -9,7 +9,13 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-@Table(name = "outbox")
+@Table(
+        name = "outbox",
+        indexes = @Index(
+                name = "idx_outbox_shard_key_created_at",
+                columnList = "shard_key ASC, created_at ASC"
+        )
+)
 @Getter
 @Entity
 @ToString

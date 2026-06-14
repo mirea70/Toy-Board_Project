@@ -2,6 +2,7 @@ package toy.board.write.domain.like.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,7 +11,14 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-@Table(name = "article_like")
+@Table(
+        name = "article_like",
+        indexes = @Index(
+                name = "idx_article_id_user_id",
+                columnList = "article_id ASC, user_id ASC",
+                unique = true
+        )
+)
 @Getter
 @Entity
 @ToString

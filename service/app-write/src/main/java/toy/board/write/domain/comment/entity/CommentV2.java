@@ -3,6 +3,7 @@ package toy.board.write.domain.comment.entity;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -11,7 +12,14 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-@Table(name = "comment_v2")
+@Table(
+        name = "comment_v2",
+        indexes = @Index(
+                name = "idx_article_id_path",
+                columnList = "article_id ASC, path ASC",
+                unique = true
+        )
+)
 @Getter
 @Entity
 @ToString
